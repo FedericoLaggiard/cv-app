@@ -35,7 +35,6 @@ class CvApp extends StatelessWidget {
             value: cubit,
             child: LibraryScreen(
               onOpenVariant: (id) => ctx.push('/editor/$id'),
-              onSettingsTapped: () {/* Settings — later ticket */},
             ),
           ),
         ),

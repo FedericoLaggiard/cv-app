@@ -69,3 +69,15 @@ class CvRepositoryNotFound implements Exception {
   @override
   String toString() => 'CvRepositoryNotFound: no variant with id $id';
 }
+
+/// Thrown by [CvRepository.create] / [CvRepository.save] when a variantName
+/// (trimmed, case-insensitive) is already in use by another variant.
+///
+/// Enforces the "univocità hard" rule from ticket 14.
+class DuplicateVariantNameException implements Exception {
+  final String variantName;
+  const DuplicateVariantNameException(this.variantName);
+  @override
+  String toString() =>
+      'DuplicateVariantNameException: variantName "$variantName" already in use';
+}

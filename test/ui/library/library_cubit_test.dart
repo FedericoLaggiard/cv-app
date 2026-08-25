@@ -24,7 +24,8 @@ Future<LibraryLoaded> _nextLoaded(
   Future<void> Function() act,
 ) async {
   final future = cubit.stream
-      .where((s) => s is LibraryLoaded).cast<LibraryLoaded>()
+      .where((s) => s is LibraryLoaded)
+      .cast<LibraryLoaded>()
       .first
       .timeout(const Duration(seconds: 5));
   await act();
@@ -37,7 +38,8 @@ Future<LibraryLoaded> _waitFor(
   bool Function(LibraryLoaded) predicate,
 ) {
   return cubit.stream
-      .where((s) => s is LibraryLoaded).cast<LibraryLoaded>()
+      .where((s) => s is LibraryLoaded)
+      .cast<LibraryLoaded>()
       .where(predicate)
       .first
       .timeout(const Duration(seconds: 5));
@@ -71,27 +73,40 @@ void main() {
     });
   });
 
-  group('LibraryCubit — createNew', () {
-    test('creates a variant and emits new loaded state', () async {
+  group('LibraryCubit — createNewNamed', () {
+    test('creates a variant with the given name and emits new loaded state',
+        () async {
       final cubit = LibraryCubit(repository: _repo());
       await cubit.load();
 
       final state = await _nextLoaded(cubit, () async {
-        await cubit.createNew();
+        await cubit.createNewNamed('Backend senior');
       });
 
       expect(state.variants.length, 1);
+      expect(state.variants.first.variantName, 'Backend senior');
     });
 
-    test('honours explicit variantName', () async {
+    test('throws LibraryValidationException on blank name', () async {
       final cubit = LibraryCubit(repository: _repo());
       await cubit.load();
 
-      final state = await _nextLoaded(cubit, () async {
-        await cubit.createNew(variantName: 'Backend senior');
-      });
+      await expectLater(
+        cubit.createNewNamed('   '),
+        throwsA(isA<LibraryValidationException>()),
+      );
+    });
 
-      expect(state.variants.first.variantName, 'Backend senior');
+    test('throws LibraryValidationException on duplicate name', () async {
+      final cubit = LibraryCubit(repository: _repo());
+      await cubit.load();
+      await cubit.createNewNamed('Alpha');
+      await _waitFor(cubit, (s) => s.variants.isNotEmpty);
+
+      await expectLater(
+        cubit.createNewNamed('ALPHA'),
+        throwsA(isA<LibraryValidationException>()),
+      );
     });
   });
 
@@ -99,7 +114,7 @@ void main() {
     test('removes a variant from state', () async {
       final cubit = LibraryCubit(repository: _repo());
       await cubit.load();
-      final id = (await cubit.createNew())!;
+      final id = (await cubit.createNewNamed('X'))!;
       await _waitFor(cubit, (s) => s.variants.isNotEmpty);
 
       final afterDelete = await _nextLoaded(cubit, () async {
@@ -114,7 +129,7 @@ void main() {
     test('renames an existing variant', () async {
       final cubit = LibraryCubit(repository: _repo());
       await cubit.load();
-      final id = (await cubit.createNew())!;
+      final id = (await cubit.createNewNamed('Old'))!;
       await _waitFor(cubit, (s) => s.variants.isNotEmpty);
 
       final afterRename = await _nextLoaded(cubit, () async {
@@ -127,7 +142,7 @@ void main() {
     test('throws LibraryValidationException on blank name', () async {
       final cubit = LibraryCubit(repository: _repo());
       await cubit.load();
-      final id = (await cubit.createNew())!;
+      final id = (await cubit.createNewNamed('X'))!;
       await _waitFor(cubit, (s) => s.variants.isNotEmpty);
 
       await expectLater(
@@ -141,8 +156,8 @@ void main() {
         '(case-insensitive)', () async {
       final cubit = LibraryCubit(repository: _repo());
       await cubit.load();
-      await cubit.createNew(variantName: 'Alpha');
-      final bId = (await cubit.createNew(variantName: 'Beta'))!;
+      await cubit.createNewNamed('Alpha');
+      final bId = (await cubit.createNewNamed('Beta'))!;
       await _waitFor(cubit, (s) => s.variants.length == 2);
 
       await expectLater(
@@ -152,33 +167,16 @@ void main() {
     });
   });
 
-  group('LibraryCubit — duplicateVariant', () {
-    test('duplicates and uses incremental name by default', () async {
+  group('LibraryCubit — duplicateVariantAs', () {
+    test('duplicates with an explicit name', () async {
       final cubit = LibraryCubit(repository: _repo());
       await cubit.load();
-      final id = (await cubit.createNew(variantName: 'Original'))!;
+      final id = (await cubit.createNewNamed('Src'))!;
       await _waitFor(cubit, (s) => s.variants.isNotEmpty);
 
-      final afterDup = await _nextLoaded(cubit, () async {
-        await cubit.duplicateVariant(id);
-      });
-
-      expect(afterDup.variants.length, 2);
-      expect(
-        afterDup.variants.map((v) => v.variantName),
-        containsAll(['Original', 'Original (2)']),
-      );
-    });
-
-    test('duplicates with explicit name', () async {
-      final cubit = LibraryCubit(repository: _repo());
-      await cubit.load();
-      final id = (await cubit.createNew(variantName: 'Src'))!;
-      await _waitFor(cubit, (s) => s.variants.isNotEmpty);
-
-      // duplicateVariant with newName does 2 repo ops (dup + rename) → 2 events.
+      // duplicateVariantAs does 2 repo ops (dup + rename) → 2 stream events.
       // Wait for the state that actually has the renamed variant.
-      await cubit.duplicateVariant(id, newName: 'Custom copy');
+      await cubit.duplicateVariantAs(id, 'Custom copy');
       final afterDup = await _waitFor(
         cubit,
         (s) => s.variants.any((v) => v.variantName == 'Custom copy'),
@@ -193,43 +191,85 @@ void main() {
     test('rejects duplicate name collision', () async {
       final cubit = LibraryCubit(repository: _repo());
       await cubit.load();
-      final id = (await cubit.createNew(variantName: 'Src'))!;
-      await cubit.createNew(variantName: 'Taken');
+      final id = (await cubit.createNewNamed('Src'))!;
+      await cubit.createNewNamed('Taken');
       await _waitFor(cubit, (s) => s.variants.length == 2);
 
       await expectLater(
-        cubit.duplicateVariant(id, newName: 'Taken'),
+        cubit.duplicateVariantAs(id, 'Taken'),
         throwsA(isA<LibraryValidationException>()),
       );
     });
   });
 
-  group('LibraryCubit — name uniqueness guard', () {
-    test('isNameAvailable is false for existing names (case-insensitive)',
+  group('LibraryCubit — validateName', () {
+    test('returns error string for existing names (case-insensitive)',
         () async {
       final cubit = LibraryCubit(repository: _repo());
       await cubit.load();
-      await cubit.createNew(variantName: 'Alpha');
+      await cubit.createNewNamed('Alpha');
       await _waitFor(cubit, (s) => s.variants.isNotEmpty);
 
-      expect(cubit.isNameAvailable('alpha'), isFalse);
-      expect(cubit.isNameAvailable('ALPHA'), isFalse);
-      expect(cubit.isNameAvailable('Beta'), isTrue);
+      expect(cubit.validateName('alpha'), isNotNull);
+      expect(cubit.validateName('ALPHA'), isNotNull);
+      expect(cubit.validateName('Beta'), isNull);
     });
 
-    test('isNameAvailable ignores the id being renamed', () async {
+    test('returns error for blank names', () async {
       final cubit = LibraryCubit(repository: _repo());
       await cubit.load();
-      final id = (await cubit.createNew(variantName: 'Alpha'))!;
-      await _waitFor(cubit, (s) => s.variants.isNotEmpty);
 
-      // Renaming Alpha to Alpha (same) should not conflict with itself.
-      expect(cubit.isNameAvailable('Alpha', excludeId: id), isTrue);
+      expect(cubit.validateName(''), isNotNull);
+      expect(cubit.validateName('   '), isNotNull);
     });
 
-    test('isNameAvailable returns true when library is not yet loaded', () {
+    test('excludeId lets the current name be reused during a rename',
+        () async {
       final cubit = LibraryCubit(repository: _repo());
-      expect(cubit.isNameAvailable('Anything'), isTrue);
+      await cubit.load();
+      final id = (await cubit.createNewNamed('Alpha'))!;
+      await _waitFor(cubit, (s) => s.variants.isNotEmpty);
+
+      expect(cubit.validateName('Alpha', excludeId: id), isNull);
+    });
+
+    test('returns null when library is not yet loaded', () {
+      final cubit = LibraryCubit(repository: _repo());
+      expect(cubit.validateName('Anything'), isNull);
+    });
+  });
+
+  group('LibraryCubit — name suggestions', () {
+    test('suggestDuplicateName follows the "<base> (N)" pattern', () async {
+      final cubit = LibraryCubit(repository: _repo());
+      await cubit.load();
+      await cubit.createNewNamed('Alpha');
+      await _waitFor(cubit, (s) => s.variants.isNotEmpty);
+
+      expect(cubit.suggestDuplicateName('Alpha'), 'Alpha (2)');
+    });
+
+    test('suggestDuplicateName skips taken slots case-insensitively',
+        () async {
+      final cubit = LibraryCubit(repository: _repo());
+      await cubit.load();
+      await cubit.createNewNamed('Alpha');
+      await cubit.createNewNamed('ALPHA (2)');
+      await _waitFor(cubit, (s) => s.variants.length == 2);
+
+      expect(cubit.suggestDuplicateName('Alpha'), 'Alpha (3)');
+    });
+
+    test('suggestNewVariantName returns the first free slot', () async {
+      final cubit = LibraryCubit(repository: _repo());
+      await cubit.load();
+
+      expect(cubit.suggestNewVariantName(), 'Nuova variante 1');
+
+      await cubit.createNewNamed('Nuova variante 1');
+      await _waitFor(cubit, (s) => s.variants.isNotEmpty);
+
+      expect(cubit.suggestNewVariantName(), 'Nuova variante 2');
     });
   });
 }

@@ -8,32 +8,45 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+const _wideSize = Size(1200, 900);
+const _narrowSize = Size(480, 900);
+
+/// Wraps [LibraryScreen] with the boilerplate providers.  Sets a fixed
+/// [Size] on [MediaQuery] so responsive dispatch is deterministic.
 Widget _makeApp({
   required LibraryCubit cubit,
   void Function(String)? onOpenVariant,
+  Size size = _wideSize,
 }) {
   return MaterialApp(
-    home: BlocProvider.value(
-      value: cubit,
-      child: LibraryScreen(onOpenVariant: onOpenVariant),
+    home: MediaQuery(
+      data: MediaQueryData(size: size),
+      child: BlocProvider.value(
+        value: cubit,
+        child: LibraryScreen(onOpenVariant: onOpenVariant),
+      ),
     ),
   );
 }
 
 LibraryCubit _cubit() => LibraryCubit(repository: InMemoryCvRepository());
 
+/// Standard settle sequence for a Library screen driven by the stream-based
+/// repository: one micro pump to run `initState().load()`, then a real-time
+/// pump so the first snapshot flushes.
+Future<void> _settleLibrary(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 100));
+}
+
 void main() {
   group('LibraryScreen — empty state', () {
-    testWidgets('shows empty-state CTAs when library has no variants',
-        (tester) async {
+    testWidgets('shows a single "Crea la prima variante" CTA', (tester) async {
       await tester.pumpWidget(_makeApp(cubit: _cubit()));
-      await tester.pump(); // settle loading state
+      await _settleLibrary(tester);
 
-      // Wait for the LibraryLoaded(empty) state
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byKey(const Key('empty_create_from_scratch')), findsOneWidget);
-      expect(find.byKey(const Key('empty_import_pdf')), findsOneWidget);
+      expect(find.byKey(const Key('empty_create_new')), findsOneWidget);
+      expect(find.text('Non hai ancora nessuna variante.'), findsOneWidget);
     });
   });
 
@@ -45,8 +58,7 @@ void main() {
       final cubit = LibraryCubit(repository: repo);
 
       await tester.pumpWidget(_makeApp(cubit: cubit));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await _settleLibrary(tester);
 
       expect(find.text('Frontend Sr'), findsOneWidget);
       expect(find.text('Backend Sr'), findsOneWidget);
@@ -63,8 +75,7 @@ void main() {
       await tester.pumpWidget(
         _makeApp(cubit: cubit, onOpenVariant: (id) => openedId = id),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await _settleLibrary(tester);
 
       await tester.tap(find.byKey(Key('open_variant_${doc.id}')));
       await tester.pump();
@@ -73,42 +84,124 @@ void main() {
     });
   });
 
-  group('LibraryScreen — delete flow', () {
-    testWidgets('delete confirm dialog button is present after menu opens',
+  group('LibraryScreen — variant [⋯] menu (wide)', () {
+    testWidgets('popup menu exposes Rinomina/Duplica/Esporta/Elimina',
         (tester) async {
       final repo = InMemoryCvRepository();
-      final doc = await repo.create(initialVariantName: 'To Delete');
+      final doc = await repo.create(initialVariantName: 'M');
       final cubit = LibraryCubit(repository: repo);
 
       await tester.pumpWidget(_makeApp(cubit: cubit));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await _settleLibrary(tester);
 
-      // Open variant menu
       await tester.tap(find.byKey(Key('variant_menu_${doc.id}')));
       await tester.pumpAndSettle();
 
-      // The popup menu should show the Elimina option
-      expect(find.text('Elimina'), findsAtLeast(1));
+      expect(find.text('Rinomina'), findsOneWidget);
+      expect(find.text('Duplica'), findsOneWidget);
+      expect(find.text('Esporta'), findsOneWidget);
+      expect(find.text('Elimina'), findsOneWidget);
+    });
+
+    testWidgets('Duplica opens dialog with pre-filled "<orig> (2)" default',
+        (tester) async {
+      final repo = InMemoryCvRepository();
+      final doc = await repo.create(initialVariantName: 'Base');
+      final cubit = LibraryCubit(repository: repo);
+
+      await tester.pumpWidget(_makeApp(cubit: cubit));
+      await _settleLibrary(tester);
+
+      await tester.tap(find.byKey(Key('variant_menu_${doc.id}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Duplica'));
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('duplicate_name_field')),
+      );
+      expect(field.controller?.text, 'Base (2)');
+      expect(find.byKey(const Key('duplicate_confirm')), findsOneWidget);
     });
   });
 
-  group('LibraryScreen — rename flow', () {
-    testWidgets('rename dialog appears after menu interaction', (tester) async {
+  group('LibraryScreen — variant [⋯] menu (narrow)', () {
+    testWidgets('opens a bottom sheet on width < 900px', (tester) async {
       final repo = InMemoryCvRepository();
-      final doc = await repo.create(initialVariantName: 'Old Name');
+      final doc = await repo.create(initialVariantName: 'M');
       final cubit = LibraryCubit(repository: repo);
 
-      await tester.pumpWidget(_makeApp(cubit: cubit));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpWidget(_makeApp(cubit: cubit, size: _narrowSize));
+      await _settleLibrary(tester);
 
-      // Open variant menu
       await tester.tap(find.byKey(Key('variant_menu_${doc.id}')));
       await tester.pumpAndSettle();
 
-      // The popup menu should show the Rinomina option
-      expect(find.text('Rinomina'), findsAtLeast(1));
+      // Bottom sheet, not popup menu — Flutter's public BottomSheet widget
+      // is present, and the four action tiles are visible.
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('Rinomina'), findsOneWidget);
+      expect(find.text('Duplica'), findsOneWidget);
+      expect(find.text('Esporta'), findsOneWidget);
+      expect(find.text('Elimina'), findsOneWidget);
+    });
+  });
+
+  group('LibraryScreen — Da zero flow', () {
+    testWidgets(
+        'tapping Nuova → Da zero shows the name dialog with a valid default',
+        (tester) async {
+      final repo = InMemoryCvRepository();
+      final cubit = LibraryCubit(repository: repo);
+
+      await tester.pumpWidget(_makeApp(cubit: cubit));
+      await _settleLibrary(tester);
+
+      await tester.tap(find.byKey(const Key('empty_create_new')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('new_from_scratch')));
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('new_variant_name_field')),
+      );
+      expect(field.controller?.text, 'Nuova variante 1');
+      expect(find.byKey(const Key('new_variant_confirm')), findsOneWidget);
+    });
+
+    testWidgets('Da PDF entry point is disabled', (tester) async {
+      final cubit = _cubit();
+      await tester.pumpWidget(_makeApp(cubit: cubit));
+      await _settleLibrary(tester);
+
+      await tester.tap(find.byKey(const Key('empty_create_new')));
+      await tester.pumpAndSettle();
+
+      final tile = tester.widget<ListTile>(
+        find.byKey(const Key('new_from_pdf')),
+      );
+      expect(tile.enabled, isFalse);
+    });
+  });
+
+  group('LibraryScreen — delete flow', () {
+    testWidgets('confirming delete removes the variant', (tester) async {
+      final repo = InMemoryCvRepository();
+      final doc = await repo.create(initialVariantName: 'ToDelete');
+      final cubit = LibraryCubit(repository: repo);
+
+      await tester.pumpWidget(_makeApp(cubit: cubit));
+      await _settleLibrary(tester);
+
+      await tester.tap(find.byKey(Key('variant_menu_${doc.id}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Elimina'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('delete_confirm')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('ToDelete'), findsNothing);
     });
   });
 }
