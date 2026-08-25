@@ -28,11 +28,21 @@ class InMemoryCvRepository implements CvRepository {
         _now = now ?? DateTime.now;
 
   @override
-  Stream<List<VariantSummary>> watchAll() async* {
-    yield _snapshot();
-    await for (final _ in _bump.stream) {
-      yield _snapshot();
-    }
+  Stream<List<VariantSummary>> watchAll() {
+    StreamSubscription<void>? bumpSub;
+    final controller = StreamController<List<VariantSummary>>(
+      onCancel: () => bumpSub?.cancel(),
+    );
+    controller.onListen = () {
+      // Subscribe to _bump BEFORE adding the first snapshot so that no
+      // mutation events are missed between the first yield and the consumer
+      // processing it (avoids the async* `await for` race condition).
+      bumpSub = _bump.stream.listen((_) {
+        if (!controller.isClosed) controller.add(_snapshot());
+      });
+      controller.add(_snapshot());
+    };
+    return controller.stream;
   }
 
   @override

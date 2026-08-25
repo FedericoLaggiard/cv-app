@@ -20,6 +20,8 @@ export 'src/repository/file_system_service.dart';
 export 'src/repository/idb_cv_repository.dart';
 export 'src/repository/in_memory_cv_repository.dart';
 export 'src/repository/path_provider_cv_repository.dart';
+export 'src/ui/library/library_cubit.dart';
+export 'src/ui/library/library_screen.dart';
 // NOTE: `path_provider_file_system_service.dart` and
 // `cv_repository_factory_io.dart` deliberately not re-exported: they import
 // `dart:io` and would break Web builds. Import them directly from the
