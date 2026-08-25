@@ -80,6 +80,9 @@ dev_dependencies:
   freezed: ^3.0.0
   json_serializable: ^6.14.1
 
+  # BLoC unit-test helpers (companion a flutter_bloc).
+  bloc_test: ^10.0.0
+
   # E2E testing pilotato via Patrol (amendment ticket 17).
   # patrol_cli e' un tool a se stante, si installa con
   # `dart pub global activate patrol_cli`.

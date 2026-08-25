@@ -81,6 +81,14 @@ packages:
       url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
     source: hosted
     version: "9.2.1"
+  bloc_test:
+    dependency: "direct dev"
+    description:
+      name: bloc_test
+      sha256: "1dd549e58be35148bc22a9135962106aa29334bc1e3f285994946a1057b29d7b"
+      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+    source: hosted
+    version: "10.0.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -241,6 +249,14 @@ packages:
       url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
     source: hosted
     version: "0.7.15"
+  diff_match_patch:
+    dependency: transitive
+    description:
+      name: diff_match_patch
+      sha256: "2efc9e6e8f449d0abe15be240e2c2a3bcd977c8d126cfd70598aee60af35c0a4"
+      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+    source: hosted
+    version: "0.4.1"
   dispose_scope:
     dependency: transitive
     description:
@@ -653,6 +669,14 @@ packages:
       url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
     source: hosted
     version: "2.0.0"
+  mocktail:
+    dependency: transitive
+    description:
+      name: mocktail
+      sha256: "5e1bf53cc7baa8062a33b84424deb61513858ea05c601b8509e683815b5914aa"
+      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+    source: hosted
+    version: "1.0.5"
   nested:
     dependency: transitive
     description:
