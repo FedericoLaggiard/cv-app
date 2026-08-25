@@ -30,22 +30,60 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   cupertino_icons: ^1.0.8
 
   # Domain fundamentals (ticket 01-04).
-  # Full stack (freezed v3, flutter_bloc, path_provider, idb_shim, intl,
-  # flutter_localizations, shared_preferences, super_editor, pdf, printing,
-  # go_router, file_picker, share_plus) verra' aggiunto man mano nei
-  # rispettivi ticket, come deciso in docs/cv-app/issues/06-scelta-stack-flutter.md.
   uuid: ^4.5.1
   meta: ^1.15.0
+
+  # Stack MVP (ticket 06 + amendments 15/17).
+  # Vedi docs/cv-app/issues/06-scelta-stack-flutter.md.
+  # Nota: pdf/printing e freezed sono pinnati a versioni compatibili con
+  # il Dart SDK ^3.11.0 dichiarato piu' sotto (pdf 3.13/printing 5.15/freezed 4.x
+  # richiedono Dart >=3.12). Le major sono quelle scelte dal ticket 06;
+  # bumpare quando bumperemo il SDK.
+  flutter_bloc: ^9.1.1              # state management (MIT)
+  go_router: ^17.5.0                # routing (BSD-3-Clause)
+  pdf: ^3.12.0                      # PDF generation (Apache-2.0)
+  printing: ^5.14.0                 # PDF preview/share/print (Apache-2.0)
+  file_picker: ^12.0.0              # import + saveFile() (MIT)
+  share_plus: ^13.3.0               # share sheet + web download (BSD-3-Clause)
+  idb_shim: ^2.9.0                  # IndexedDB wrapper (BSD-3-Clause) - 2.9.2 e' l'ultima compat Dart 3.11
+  path_provider: ^2.1.5             # storage paths desktop/mobile (BSD-3-Clause)
+  freezed_annotation: ^3.1.0        # v3.x pinned (report ticket 06)
+  json_annotation: ^4.9.0
+  flutter_markdown_plus: ^1.0.12    # preview Markdown (MIT)
+  intl: ^0.20.2                     # date formatting per template PDF (BSD-3-Clause)
+  shared_preferences: ^2.5.2        # ui_locale, onboarding_completed (BSD-3-Clause)
+
+  # Markdown editor WYSIWYG. Il ticket 06 raccomandava la versione GitHub
+  # perche' la release pub.dev era vecchia; usiamo invece le dev release
+  # 0.3.0-dev.* (allineate con uuid v4 e Dart 3.11) pinnate a un range
+  # stretto perche' l'API e' pre-1.0 e le breaking arrivano in punto.
+  # Storage rimane Markdown puro, quindi swap all'Approccio A
+  # (TextField + toolbar) resta reversibile senza toccare i dati.
+  super_editor: ">=0.3.0-dev.31 <0.3.0-dev.40"
+  super_editor_markdown: ^0.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+
+  # Code generation per freezed + json_serializable (ticket 06).
+  # freezed pinnato a v3.x (v4 richiede Dart >=3.13).
+  build_runner: ^2.4.13
+  freezed: ^3.0.0
+  json_serializable: ^6.14.1
+
+  # E2E testing pilotato via Patrol (amendment ticket 17).
+  # patrol_cli e' un tool a se stante, si installa con
+  # `dart pub global activate patrol_cli`.
+  patrol: ^4.9.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
