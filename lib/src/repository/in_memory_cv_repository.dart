@@ -60,11 +60,15 @@ class InMemoryCvRepository implements CvRepository {
   @override
   Future<CvDocument> create({String? initialVariantName}) async {
     final now = _now().toUtc();
+    final name = initialVariantName ?? _defaultName();
+    if (initialVariantName != null && _nameClashes(name)) {
+      throw DuplicateVariantNameException(name.trim());
+    }
     final doc = CvDocument(
       id: _uuid.v4(),
       createdAt: now,
       updatedAt: now,
-      variantName: initialVariantName ?? _defaultName(),
+      variantName: name,
     );
     _byId[doc.id] = doc;
     _bump.add(null);
@@ -90,6 +94,9 @@ class InMemoryCvRepository implements CvRepository {
   @override
   Future<void> save(CvDocument doc) async {
     // Auto-save pipeline: GC unreferenced assets, validate, stamp updatedAt.
+    if (_nameClashes(doc.variantName, excludeId: doc.id)) {
+      throw DuplicateVariantNameException(doc.variantName.trim());
+    }
     final gcd = garbageCollectAssets(doc);
     validate(gcd);
     final stamped = gcd.copyWith(updatedAt: _now().toUtc());
@@ -175,6 +182,13 @@ class InMemoryCvRepository implements CvRepository {
   }
 
   String _normalize(String s) => s.trim().toLowerCase();
+
+  bool _nameClashes(String name, {String? excludeId}) {
+    final norm = _normalize(name);
+    return _byId.values.any(
+      (d) => d.id != excludeId && _normalize(d.variantName) == norm,
+    );
+  }
 
   /// Test helper: expose current keys.
   Iterable<String> get debugIds => _byId.keys;

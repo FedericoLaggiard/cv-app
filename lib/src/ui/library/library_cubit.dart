@@ -97,11 +97,12 @@ class LibraryCubit extends Cubit<LibraryState> {
     return ready.future;
   }
 
-  /// Creates a new (empty) variant, optionally with [variantName].
-  /// Returns the new variant's id.  The repository stream will push a fresh
-  /// [LibraryLoaded] automatically.
-  Future<String?> createNew({String? variantName}) async {
-    final doc = await _repo.create(initialVariantName: variantName);
+  /// Creates a new (empty) variant with the given [name].
+  /// Throws [LibraryValidationException] if the name is blank or already
+  /// taken (case-insensitive, trimmed).  Returns the new variant's id.
+  Future<String?> createNewNamed(String name) async {
+    _guardName(name);
+    final doc = await _repo.create(initialVariantName: name.trim());
     return doc.id;
   }
 
@@ -116,27 +117,55 @@ class LibraryCubit extends Cubit<LibraryState> {
     await _repo.save(doc.copyWith(variantName: newName.trim()));
   }
 
-  /// Duplicates a variant.  If [newName] is given it is validated and used as
-  /// the copy's name; otherwise the repository chooses the default incremental
-  /// name (`<orig> (2)`, `(3)`, …).  Returns the new variant's id.
-  Future<String?> duplicateVariant(String id, {String? newName}) async {
-    if (newName != null) {
-      _guardName(newName);
-      // Duplicate via repo (gets a new UUID + timestamps), then rename.
-      final copy = await _repo.duplicate(id);
-      await _repo.save(copy.copyWith(variantName: newName.trim()));
-      return copy.id;
-    }
+  /// Duplicates a variant with an explicit user-supplied [newName].
+  /// Throws [LibraryValidationException] on validation failure.
+  /// Returns the new variant's id.
+  Future<String?> duplicateVariantAs(String id, String newName) async {
+    _guardName(newName);
     final copy = await _repo.duplicate(id);
+    await _repo.save(copy.copyWith(variantName: newName.trim()));
     return copy.id;
   }
 
-  /// Returns `true` if [name] (trimmed, case-insensitive) is not already used
-  /// by another variant in the current loaded state.
+  /// Returns the error message for [name] against the currently loaded
+  /// library, or `null` if the name is valid.  [excludeId] skips the
+  /// variant being renamed.
   ///
-  /// [excludeId] is the id of the variant being renamed (its current name is
-  /// not treated as a conflict).
-  bool isNameAvailable(String name, {String? excludeId}) {
+  /// Single source of truth for the "univocità hard, case-insensitive con
+  /// trim" rule (ticket 14) — reused by dialogs and by [_guardName].
+  String? validateName(String name, {String? excludeId}) {
+    if (name.trim().isEmpty) {
+      return 'Il nome non può essere vuoto';
+    }
+    if (!_isNameAvailable(name, excludeId: excludeId)) {
+      return 'Esiste già una variante con questo nome';
+    }
+    return null;
+  }
+
+  /// Returns the next free `<base> (N)` suggestion for a duplicate of
+  /// [baseName], starting at (2).  Matches the pattern spec'd in ticket 14.
+  String suggestDuplicateName(String baseName) {
+    final base = baseName.trim();
+    for (var n = 2; n < 10000; n++) {
+      final candidate = '$base ($n)';
+      if (_isNameAvailable(candidate)) return candidate;
+    }
+    return '$base (copia)';
+  }
+
+  /// Returns the next free "Nuova variante N" suggestion (N ≥ 1).
+  String suggestNewVariantName() {
+    for (var n = 1; n < 10000; n++) {
+      final candidate = 'Nuova variante $n';
+      if (_isNameAvailable(candidate)) return candidate;
+    }
+    return 'Nuova variante';
+  }
+
+  // ── private helpers ───────────────────────────────────────────────────────
+
+  bool _isNameAvailable(String name, {String? excludeId}) {
     final normalized = name.trim().toLowerCase();
     final current = state;
     if (current is! LibraryLoaded) return true;
@@ -147,17 +176,9 @@ class LibraryCubit extends Cubit<LibraryState> {
     );
   }
 
-  // ── private helpers ───────────────────────────────────────────────────────
-
   void _guardName(String name, {String? excludeId}) {
-    if (name.trim().isEmpty) {
-      throw const LibraryValidationException('Il nome non può essere vuoto');
-    }
-    if (!isNameAvailable(name, excludeId: excludeId)) {
-      throw LibraryValidationException(
-        'Esiste già una variante con il nome "${name.trim()}"',
-      );
-    }
+    final err = validateName(name, excludeId: excludeId);
+    if (err != null) throw LibraryValidationException(err);
   }
 
   @override
