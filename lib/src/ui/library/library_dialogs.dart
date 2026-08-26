@@ -1,7 +1,7 @@
-/// Dialogs used by the Library screen.
-///
-/// Each dialog validates against [LibraryCubit.validateName] so the
-/// "univocità hard" rule (ticket 14) has a single source of truth.
+/// Dialogs used by the Library screen — all [StatelessWidget]s backed by
+/// small form cubits ([NameFieldCubit], [DuplicateFromNewCubit]) that
+/// own their [TextEditingController]s and their validation state.  This
+/// keeps the widget tree stateless while [Cubit.close] handles disposal.
 library;
 
 import 'package:flutter/material.dart';
@@ -22,92 +22,78 @@ class DuplicateSelection {
   const DuplicateSelection({required this.sourceId, required this.name});
 }
 
-// ─────────────────────────── Shared name field ─────────────────────────────
+// ─────────────────────────── NameFieldCubit ────────────────────────────────
 
-/// A [TextField] bound to [controller] that shows the validation error from
-/// [LibraryCubit.validateName].  Used by every dialog that takes a name.
-class _NameField extends StatefulWidget {
-  const _NameField({
-    required this.controller,
-    required this.labelText,
-    required this.excludeId,
-    this.autofocus = true,
-    this.fieldKey,
-    this.onSubmit,
-  });
+class NameFieldState {
+  /// `null` = valid, non-null = human-readable error message.
+  final String? error;
+  const NameFieldState(this.error);
 
+  bool get isValid => error == null;
+
+  @override
+  bool operator ==(Object other) =>
+      other is NameFieldState && other.error == error;
+  @override
+  int get hashCode => error.hashCode;
+}
+
+/// Owns a [TextEditingController] and re-validates against
+/// [LibraryCubit.validateName] on every keystroke.  Disposal of the
+/// controller happens in [close].
+class NameFieldCubit extends Cubit<NameFieldState> {
   final TextEditingController controller;
-  final String labelText;
+  final LibraryCubit _library;
+  final String? _excludeId;
 
-  /// If set, the id of the variant being renamed — excluded from the clash
-  /// check so its current name doesn't count as a conflict.
-  final String? excludeId;
-  final bool autofocus;
-  final Key? fieldKey;
-  final VoidCallback? onSubmit;
-
-  @override
-  State<_NameField> createState() => _NameFieldState();
-}
-
-class _NameFieldState extends State<_NameField> {
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_rebuild);
+  NameFieldCubit({
+    required LibraryCubit libraryCubit,
+    required String initialText,
+    String? excludeId,
+  })  : controller = TextEditingController(text: initialText)
+          ..selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: initialText.length,
+          ),
+        _library = libraryCubit,
+        _excludeId = excludeId,
+        super(NameFieldState(
+          libraryCubit.validateName(initialText, excludeId: excludeId),
+        )) {
+    controller.addListener(_onChange);
   }
 
-  @override
-  void dispose() {
-    widget.controller.removeListener(_rebuild);
-    super.dispose();
+  void _onChange() {
+    emit(NameFieldState(
+      _library.validateName(controller.text, excludeId: _excludeId),
+    ));
   }
 
-  void _rebuild() {
-    if (mounted) setState(() {});
+  /// Overwrites the field text and re-validates immediately.  Used by
+  /// [DuplicateFromNewCubit] when the source dropdown changes.
+  void setText(String next) {
+    controller.text = next;
+    // The listener re-emits automatically.
   }
 
+  String get trimmedText => controller.text.trim();
+
   @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<LibraryCubit>();
-    final error = cubit.validateName(
-      widget.controller.text,
-      excludeId: widget.excludeId,
-    );
-    final canSubmit = error == null && widget.onSubmit != null;
-    return TextField(
-      key: widget.fieldKey,
-      controller: widget.controller,
-      autofocus: widget.autofocus,
-      decoration: InputDecoration(
-        labelText: widget.labelText,
-        errorText: error,
-      ),
-      onSubmitted: canSubmit ? (_) => widget.onSubmit!() : null,
-    );
+  Future<void> close() {
+    controller.removeListener(_onChange);
+    controller.dispose();
+    return super.close();
   }
 }
 
-/// Returns `true` when the name in [controller] is a valid (non-empty,
-/// non-clashing) submission — used by dialog confirm buttons.
-bool _canConfirm(
-  BuildContext context,
-  TextEditingController controller, {
-  String? excludeId,
-}) {
-  return context
-          .read<LibraryCubit>()
-          .validateName(controller.text, excludeId: excludeId) ==
-      null;
-}
+// ─────────────────────────── Single-name dialog ────────────────────────────
 
-// ─────────────────────────── Name-only dialogs ─────────────────────────────
-
-/// Base for the three "single name field" dialogs: rename, duplicate-from-card,
-/// and create-from-scratch.  Each specialisation just changes the title,
-/// initial text, and confirm-button label.
-class _SingleNameDialog extends StatefulWidget {
+/// A stateless dialog with one name field + Annulla / [confirmLabel] actions.
+/// Wraps everything in a [BlocProvider] for its own [NameFieldCubit], which
+/// owns the [TextEditingController] and lives exactly as long as the dialog.
+class _SingleNameDialog extends StatelessWidget {
   const _SingleNameDialog({
+    required this.libraryCubit,
     required this.title,
     required this.initialName,
     required this.confirmLabel,
@@ -116,6 +102,7 @@ class _SingleNameDialog extends StatefulWidget {
     this.excludeId,
   });
 
+  final LibraryCubit libraryCubit;
   final String title;
   final String initialName;
   final String confirmLabel;
@@ -124,57 +111,101 @@ class _SingleNameDialog extends StatefulWidget {
   final String? excludeId;
 
   @override
-  State<_SingleNameDialog> createState() => _SingleNameDialogState();
+  Widget build(BuildContext context) {
+    return BlocProvider<NameFieldCubit>(
+      create: (_) => NameFieldCubit(
+        libraryCubit: libraryCubit,
+        initialText: initialName,
+        excludeId: excludeId,
+      ),
+      child: _SingleNameDialogBody(
+        title: title,
+        confirmLabel: confirmLabel,
+        fieldKey: fieldKey,
+        confirmKey: confirmKey,
+      ),
+    );
+  }
 }
 
-class _SingleNameDialogState extends State<_SingleNameDialog> {
-  late final TextEditingController _ctrl;
+class _SingleNameDialogBody extends StatelessWidget {
+  const _SingleNameDialogBody({
+    required this.title,
+    required this.confirmLabel,
+    required this.fieldKey,
+    required this.confirmKey,
+  });
 
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = TextEditingController(text: widget.initialName)
-      ..selection = TextSelection(
-        baseOffset: 0,
-        extentOffset: widget.initialName.length,
-      );
-  }
+  final String title;
+  final String confirmLabel;
+  final Key fieldKey;
+  final Key confirmKey;
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _confirm() {
-    if (!_canConfirm(context, _ctrl, excludeId: widget.excludeId)) return;
-    Navigator.of(context).pop(_ctrl.text.trim());
+  void _confirm(BuildContext context) {
+    final field = context.read<NameFieldCubit>();
+    if (!field.state.isValid) return;
+    Navigator.of(context).pop(field.trimmedText);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.title),
-      content: _NameField(
-        controller: _ctrl,
+      title: Text(title),
+      content: _NameFieldView(
+        fieldKey: fieldKey,
         labelText: 'Nome variante',
-        excludeId: widget.excludeId,
-        fieldKey: widget.fieldKey,
-        onSubmit: _confirm,
+        onSubmit: () => _confirm(context),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Annulla'),
         ),
-        FilledButton(
-          key: widget.confirmKey,
-          onPressed: _canConfirm(context, _ctrl, excludeId: widget.excludeId)
-              ? _confirm
-              : null,
-          child: Text(widget.confirmLabel),
+        BlocBuilder<NameFieldCubit, NameFieldState>(
+          builder: (context, state) => FilledButton(
+            key: confirmKey,
+            onPressed: state.isValid ? () => _confirm(context) : null,
+            child: Text(confirmLabel),
+          ),
         ),
       ],
+    );
+  }
+}
+
+/// The [TextField] that reads from an ambient [NameFieldCubit] (owns the
+/// controller) and rebuilds when validation state changes.  Kept as a
+/// [StatelessWidget]: the controller lifetime is the cubit's, not this
+/// widget's.
+class _NameFieldView extends StatelessWidget {
+  const _NameFieldView({
+    required this.fieldKey,
+    required this.labelText,
+    required this.onSubmit,
+    this.autofocus = true,
+  });
+
+  final Key fieldKey;
+  final String labelText;
+  final VoidCallback onSubmit;
+  final bool autofocus;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<NameFieldCubit, NameFieldState>(
+      builder: (context, state) {
+        final cubit = context.read<NameFieldCubit>();
+        return TextField(
+          key: fieldKey,
+          controller: cubit.controller,
+          autofocus: autofocus,
+          decoration: InputDecoration(
+            labelText: labelText,
+            errorText: state.error,
+          ),
+          onSubmitted: state.isValid ? (_) => onSubmit() : null,
+        );
+      },
     );
   }
 }
@@ -189,16 +220,14 @@ Future<String?> showRenameVariantDialog(
 }) {
   return showDialog<String>(
     context: context,
-    builder: (_) => BlocProvider.value(
-      value: cubit,
-      child: _SingleNameDialog(
-        title: 'Rinomina variante',
-        initialName: currentName,
-        confirmLabel: 'Salva',
-        fieldKey: const Key('rename_field'),
-        confirmKey: const Key('rename_confirm'),
-        excludeId: variantId,
-      ),
+    builder: (_) => _SingleNameDialog(
+      libraryCubit: cubit,
+      title: 'Rinomina variante',
+      initialName: currentName,
+      confirmLabel: 'Salva',
+      fieldKey: const Key('rename_field'),
+      confirmKey: const Key('rename_confirm'),
+      excludeId: variantId,
     ),
   );
 }
@@ -214,15 +243,13 @@ Future<String?> showDuplicateFromCardDialog(
   final suggested = cubit.suggestDuplicateName(sourceName);
   return showDialog<String>(
     context: context,
-    builder: (_) => BlocProvider.value(
-      value: cubit,
-      child: _SingleNameDialog(
-        title: 'Duplica variante',
-        initialName: suggested,
-        confirmLabel: 'Duplica',
-        fieldKey: const Key('duplicate_name_field'),
-        confirmKey: const Key('duplicate_confirm'),
-      ),
+    builder: (_) => _SingleNameDialog(
+      libraryCubit: cubit,
+      title: 'Duplica variante',
+      initialName: suggested,
+      confirmLabel: 'Duplica',
+      fieldKey: const Key('duplicate_name_field'),
+      confirmKey: const Key('duplicate_confirm'),
     ),
   );
 }
@@ -237,15 +264,13 @@ Future<String?> showNewVariantNameDialog(
   final suggested = cubit.suggestNewVariantName();
   return showDialog<String>(
     context: context,
-    builder: (_) => BlocProvider.value(
-      value: cubit,
-      child: _SingleNameDialog(
-        title: 'Nuova variante',
-        initialName: suggested,
-        confirmLabel: 'Crea',
-        fieldKey: const Key('new_variant_name_field'),
-        confirmKey: const Key('new_variant_confirm'),
-      ),
+    builder: (_) => _SingleNameDialog(
+      libraryCubit: cubit,
+      title: 'Nuova variante',
+      initialName: suggested,
+      confirmLabel: 'Crea',
+      fieldKey: const Key('new_variant_name_field'),
+      confirmKey: const Key('new_variant_confirm'),
     ),
   );
 }
@@ -296,87 +321,125 @@ Future<bool?> showDeleteVariantDialog(
   );
 }
 
-// ─────────────────────────── Duplicate from Nuova ──────────────────────────
+// ─────────────────────────── DuplicateFromNewCubit ─────────────────────────
 
-class _DuplicateFromNewDialog extends StatefulWidget {
-  const _DuplicateFromNewDialog({required this.variants});
+class DuplicateFromNewState {
+  final String selectedId;
+  const DuplicateFromNewState(this.selectedId);
 
+  @override
+  bool operator ==(Object other) =>
+      other is DuplicateFromNewState && other.selectedId == selectedId;
+  @override
+  int get hashCode => selectedId.hashCode;
+}
+
+/// Owns the dropdown selection AND the name field's cubit for the
+/// "Duplica da Nuova" dialog — the two are coupled because changing the
+/// source auto-refills the name.
+class DuplicateFromNewCubit extends Cubit<DuplicateFromNewState> {
+  final LibraryCubit _library;
+  final List<VariantSummary> _variants;
+  late final NameFieldCubit nameField;
+
+  DuplicateFromNewCubit({
+    required LibraryCubit libraryCubit,
+    required List<VariantSummary> variants,
+  })  : _library = libraryCubit,
+        _variants = variants,
+        super(DuplicateFromNewState(variants.first.id)) {
+    nameField = NameFieldCubit(
+      libraryCubit: libraryCubit,
+      initialText: libraryCubit.suggestDuplicateName(variants.first.variantName),
+    );
+  }
+
+  void selectSource(String id) {
+    final variant = _variants.firstWhere((v) => v.id == id);
+    nameField.setText(_library.suggestDuplicateName(variant.variantName));
+    emit(DuplicateFromNewState(id));
+  }
+
+  @override
+  Future<void> close() async {
+    await nameField.close();
+    return super.close();
+  }
+}
+
+// ─────────────────────────── Duplicate from Nuova dialog ───────────────────
+
+class _DuplicateFromNewDialog extends StatelessWidget {
+  const _DuplicateFromNewDialog({
+    required this.libraryCubit,
+    required this.variants,
+  });
+
+  final LibraryCubit libraryCubit;
   final List<VariantSummary> variants;
 
   @override
-  State<_DuplicateFromNewDialog> createState() =>
-      _DuplicateFromNewDialogState();
+  Widget build(BuildContext context) {
+    return BlocProvider<DuplicateFromNewCubit>(
+      create: (_) => DuplicateFromNewCubit(
+        libraryCubit: libraryCubit,
+        variants: variants,
+      ),
+      child: _DuplicateFromNewDialogBody(variants: variants),
+    );
+  }
 }
 
-class _DuplicateFromNewDialogState extends State<_DuplicateFromNewDialog> {
-  late String _selectedId;
-  late final TextEditingController _ctrl;
+class _DuplicateFromNewDialogBody extends StatelessWidget {
+  const _DuplicateFromNewDialogBody({required this.variants});
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedId = widget.variants.first.id;
-    // Cubit is available in initState via BlocProvider.value above.
-    _ctrl = TextEditingController();
-    // Fill the initial suggestion in the first frame (cubit lookup needs
-    // an inherited widget lookup, safe from initState via context.read).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final cubit = context.read<LibraryCubit>();
-      _ctrl.text = cubit.suggestDuplicateName(widget.variants.first.variantName);
-    });
-  }
+  final List<VariantSummary> variants;
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _confirm() {
-    if (!_canConfirm(context, _ctrl)) return;
-    Navigator.of(context).pop(
-      DuplicateSelection(sourceId: _selectedId, name: _ctrl.text.trim()),
-    );
+  void _confirm(BuildContext context) {
+    final form = context.read<DuplicateFromNewCubit>();
+    if (!form.nameField.state.isValid) return;
+    Navigator.of(context).pop(DuplicateSelection(
+      sourceId: form.state.selectedId,
+      name: form.nameField.trimmedText,
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final form = context.read<DuplicateFromNewCubit>();
     return AlertDialog(
       title: const Text('Duplica variante'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          DropdownButtonFormField<String>(
-            key: const Key('duplicate_source_dropdown'),
-            initialValue: _selectedId,
-            decoration: const InputDecoration(labelText: 'Variante sorgente'),
-            items: widget.variants
-                .map(
-                  (v) => DropdownMenuItem(
-                    value: v.id,
-                    child: Text(v.variantName),
-                  ),
-                )
-                .toList(),
-            onChanged: (id) {
-              if (id == null) return;
-              final variant = widget.variants.firstWhere((v) => v.id == id);
-              final cubit = context.read<LibraryCubit>();
-              setState(() {
-                _selectedId = id;
-                _ctrl.text = cubit.suggestDuplicateName(variant.variantName);
-              });
-            },
+          BlocBuilder<DuplicateFromNewCubit, DuplicateFromNewState>(
+            builder: (context, state) => DropdownButtonFormField<String>(
+              key: const Key('duplicate_source_dropdown'),
+              initialValue: state.selectedId,
+              decoration:
+                  const InputDecoration(labelText: 'Variante sorgente'),
+              items: variants
+                  .map(
+                    (v) => DropdownMenuItem(
+                      value: v.id,
+                      child: Text(v.variantName),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (id) {
+                if (id != null) form.selectSource(id);
+              },
+            ),
           ),
           const SizedBox(height: 16),
-          _NameField(
-            controller: _ctrl,
-            labelText: 'Nome della copia',
-            excludeId: null,
-            autofocus: false,
-            fieldKey: const Key('duplicate_from_new_name_field'),
-            onSubmit: _confirm,
+          BlocProvider<NameFieldCubit>.value(
+            value: form.nameField,
+            child: _NameFieldView(
+              fieldKey: const Key('duplicate_from_new_name_field'),
+              labelText: 'Nome della copia',
+              autofocus: false,
+              onSubmit: () => _confirm(context),
+            ),
           ),
         ],
       ),
@@ -385,10 +448,16 @@ class _DuplicateFromNewDialogState extends State<_DuplicateFromNewDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Annulla'),
         ),
-        FilledButton(
-          key: const Key('duplicate_from_new_confirm'),
-          onPressed: _canConfirm(context, _ctrl) ? _confirm : null,
-          child: const Text('Duplica'),
+        BlocProvider<NameFieldCubit>.value(
+          value: form.nameField,
+          child: BlocBuilder<NameFieldCubit, NameFieldState>(
+            builder: (context, state) => FilledButton(
+              key: const Key('duplicate_from_new_confirm'),
+              onPressed:
+                  state.isValid ? () => _confirm(context) : null,
+              child: const Text('Duplica'),
+            ),
+          ),
         ),
       ],
     );
@@ -404,9 +473,9 @@ Future<DuplicateSelection?> showDuplicateFromNewDialog(
 }) {
   return showDialog<DuplicateSelection>(
     context: context,
-    builder: (_) => BlocProvider.value(
-      value: cubit,
-      child: _DuplicateFromNewDialog(variants: variants),
+    builder: (_) => _DuplicateFromNewDialog(
+      libraryCubit: cubit,
+      variants: variants,
     ),
   );
 }
