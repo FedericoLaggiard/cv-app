@@ -16,24 +16,16 @@ import 'variant_card.dart';
 
 /// The Library screen widget.
 ///
-/// Must be placed below a [BlocProvider<LibraryCubit>] (or supplied one via
+/// Must be placed below a [BlocProvider<LibraryCubit>] whose cubit has
+/// already been asked to `load()` (production wires that via
+/// `BlocProvider.create: (_) => LibraryCubit(...)..load()`; tests either
+/// do the same or preload their own cubit and inject it via
 /// [BlocProvider.value]).  [onOpenVariant] is called when the user taps
 /// "Apri" on a variant card or creates/duplicates a variant.
-class LibraryScreen extends StatefulWidget {
+class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key, this.onOpenVariant});
 
   final void Function(String variantId)? onOpenVariant;
-
-  @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
-}
-
-class _LibraryScreenState extends State<LibraryScreen> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<LibraryCubit>().load();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +45,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               _EmptyLibrary(onCreateNew: _handleCreateNew),
             LibraryLoaded(:final variants) => _LibraryGrid(
               variants: variants,
-              onOpenVariant: widget.onOpenVariant,
+              onOpenVariant: onOpenVariant,
               onCreateNew: _handleCreateNew,
             ),
           };
@@ -70,16 +62,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
       context: ctx,
       builder: (_) => const NewVariantMenuSheet(),
     );
-    if (!mounted || action == null) return;
+    if (action == null || !ctx.mounted) return;
     switch (action) {
       case NewVariantAction.fromScratch:
-        final name = await showNewVariantNameDialog(context, cubit: cubit);
-        if (name == null || !mounted) return;
+        final name = await showNewVariantNameDialog(ctx, cubit: cubit);
+        if (name == null || !ctx.mounted) return;
         final id = await cubit.createNewNamed(name);
-        if (mounted && id != null) widget.onOpenVariant?.call(id);
+        if (id != null) onOpenVariant?.call(id);
       case NewVariantAction.duplicate:
-        if (!mounted) return;
-        await _handleDuplicateFromNew(context, cubit);
+        await _handleDuplicateFromNew(ctx, cubit);
       case NewVariantAction.fromPdf:
         // Disabled in the sheet; kept in the enum for the later PDF-import
         // ticket.  Reaching this branch should be impossible in practice.
@@ -98,9 +89,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
       cubit: cubit,
       variants: state.variants,
     );
-    if (result == null || !mounted) return;
+    if (result == null) return;
     final newId = await cubit.duplicateVariantAs(result.sourceId, result.name);
-    if (mounted && newId != null) widget.onOpenVariant?.call(newId);
+    if (newId != null) onOpenVariant?.call(newId);
   }
 }
 

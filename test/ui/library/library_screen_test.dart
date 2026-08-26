@@ -29,7 +29,17 @@ Widget _makeApp({
   );
 }
 
-LibraryCubit _cubit() => LibraryCubit(repository: InMemoryCvRepository());
+/// Builds a cubit and kicks off `load()` without awaiting — matches how
+/// production wires the cubit via `BlocProvider.create: (_) => LibraryCubit(...)..load()`.
+/// Inside `testWidgets`, the pending stream event is flushed by the caller's
+/// first `pump`/`pumpAndSettle`.  Awaiting `load()` here would deadlock
+/// because the stream event delivery happens in the fake async zone that
+/// only advances on `tester.pump`.
+LibraryCubit _loadedCubit(InMemoryCvRepository repo) {
+  return LibraryCubit(repository: repo)..load();
+}
+
+LibraryCubit _emptyLoadedCubit() => _loadedCubit(InMemoryCvRepository());
 
 /// Standard settle sequence for a Library screen driven by the stream-based
 /// repository: one micro pump to run `initState().load()`, then a real-time
@@ -42,7 +52,8 @@ Future<void> _settleLibrary(WidgetTester tester) async {
 void main() {
   group('LibraryScreen — empty state', () {
     testWidgets('shows a single "Crea la prima variante" CTA', (tester) async {
-      await tester.pumpWidget(_makeApp(cubit: _cubit()));
+      final cubit = _emptyLoadedCubit();
+      await tester.pumpWidget(_makeApp(cubit: cubit));
       await _settleLibrary(tester);
 
       expect(find.byKey(const Key('empty_create_new')), findsOneWidget);
@@ -55,7 +66,7 @@ void main() {
       final repo = InMemoryCvRepository();
       await repo.create(initialVariantName: 'Frontend Sr');
       await repo.create(initialVariantName: 'Backend Sr');
-      final cubit = LibraryCubit(repository: repo);
+      final cubit = _loadedCubit(repo);
 
       await tester.pumpWidget(_makeApp(cubit: cubit));
       await _settleLibrary(tester);
@@ -69,7 +80,7 @@ void main() {
         (tester) async {
       final repo = InMemoryCvRepository();
       final doc = await repo.create(initialVariantName: 'My CV');
-      final cubit = LibraryCubit(repository: repo);
+      final cubit = _loadedCubit(repo);
 
       String? openedId;
       await tester.pumpWidget(
@@ -89,7 +100,7 @@ void main() {
         (tester) async {
       final repo = InMemoryCvRepository();
       final doc = await repo.create(initialVariantName: 'M');
-      final cubit = LibraryCubit(repository: repo);
+      final cubit = _loadedCubit(repo);
 
       await tester.pumpWidget(_makeApp(cubit: cubit));
       await _settleLibrary(tester);
@@ -107,7 +118,7 @@ void main() {
         (tester) async {
       final repo = InMemoryCvRepository();
       final doc = await repo.create(initialVariantName: 'Base');
-      final cubit = LibraryCubit(repository: repo);
+      final cubit = _loadedCubit(repo);
 
       await tester.pumpWidget(_makeApp(cubit: cubit));
       await _settleLibrary(tester);
@@ -129,7 +140,7 @@ void main() {
     testWidgets('opens a bottom sheet on width < 900px', (tester) async {
       final repo = InMemoryCvRepository();
       final doc = await repo.create(initialVariantName: 'M');
-      final cubit = LibraryCubit(repository: repo);
+      final cubit = _loadedCubit(repo);
 
       await tester.pumpWidget(_makeApp(cubit: cubit, size: _narrowSize));
       await _settleLibrary(tester);
@@ -152,7 +163,7 @@ void main() {
         'tapping Nuova → Da zero shows the name dialog with a valid default',
         (tester) async {
       final repo = InMemoryCvRepository();
-      final cubit = LibraryCubit(repository: repo);
+      final cubit = _loadedCubit(repo);
 
       await tester.pumpWidget(_makeApp(cubit: cubit));
       await _settleLibrary(tester);
@@ -170,7 +181,7 @@ void main() {
     });
 
     testWidgets('Da PDF entry point is disabled', (tester) async {
-      final cubit = _cubit();
+      final cubit = _emptyLoadedCubit();
       await tester.pumpWidget(_makeApp(cubit: cubit));
       await _settleLibrary(tester);
 
@@ -188,7 +199,7 @@ void main() {
     testWidgets('confirming delete removes the variant', (tester) async {
       final repo = InMemoryCvRepository();
       final doc = await repo.create(initialVariantName: 'ToDelete');
-      final cubit = LibraryCubit(repository: repo);
+      final cubit = _loadedCubit(repo);
 
       await tester.pumpWidget(_makeApp(cubit: cubit));
       await _settleLibrary(tester);

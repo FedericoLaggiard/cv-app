@@ -20,6 +20,7 @@ export 'src/repository/file_system_service.dart';
 export 'src/repository/idb_cv_repository.dart';
 export 'src/repository/in_memory_cv_repository.dart';
 export 'src/repository/path_provider_cv_repository.dart';
+export 'src/app/app_boot_cubit.dart';
 export 'src/ui/library/library_cubit.dart';
 export 'src/ui/library/library_dialogs.dart';
 export 'src/ui/library/library_screen.dart';
