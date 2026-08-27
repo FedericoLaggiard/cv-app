@@ -89,7 +89,7 @@ class PathProviderCvRepository implements CvRepository {
     try {
       final source = utf8.decode(bytes);
       final doc = CvDocumentCodec.fromJsonString(source);
-      validate(doc);
+      validateStructure(doc);
       _cache[id] = doc;
       _corrupt.remove(id);
       _corruptNames.remove(id);
@@ -196,7 +196,7 @@ class PathProviderCvRepository implements CvRepository {
   Future<void> save(CvDocument doc) async {
     await _bootstrap();
     final gcd = garbageCollectAssets(doc);
-    validate(gcd);
+    validateStructure(gcd);
     final stamped = gcd.copyWith(updatedAt: _now().toUtc());
     await _persist(stamped);
   }
@@ -235,7 +235,7 @@ class PathProviderCvRepository implements CvRepository {
     CvDocument doc;
     try {
       doc = CvDocumentCodec.fromJsonString(source);
-      validate(doc);
+      validateStructure(doc);
     } on FormatException catch (e) {
       return ImportCorrupt('malformed JSON: ${e.message}');
     } on CvSchemaException catch (e) {
