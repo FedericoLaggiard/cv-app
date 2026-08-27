@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 
 import 'src/app/app_boot_cubit.dart';
 import 'src/repository/cv_repository.dart';
+import 'src/ui/editor/editor_screen.dart';
 import 'src/ui/library/library_cubit.dart';
 import 'src/ui/library/library_screen.dart';
 
@@ -74,12 +75,15 @@ class _AppRoot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<LibraryCubit>(
-      create: (_) => LibraryCubit(repository: repository)..load(),
-      child: RepositoryProvider<GoRouter>(
-        create: (routerCtx) => _buildRouter(routerCtx.read<LibraryCubit>()),
-        child: Builder(
-          builder: (ctx) => Router.withConfig(config: ctx.read<GoRouter>()),
+    return RepositoryProvider<CvRepository>.value(
+      value: repository,
+      child: BlocProvider<LibraryCubit>(
+        create: (_) => LibraryCubit(repository: repository)..load(),
+        child: RepositoryProvider<GoRouter>(
+          create: (routerCtx) => _buildRouter(routerCtx.read<LibraryCubit>()),
+          child: Builder(
+            builder: (ctx) => Router.withConfig(config: ctx.read<GoRouter>()),
+          ),
         ),
       ),
     );
@@ -99,8 +103,10 @@ class _AppRoot extends StatelessWidget {
         ),
         GoRoute(
           path: '/editor/:id',
-          builder: (_, state) => _EditorPlaceholder(
+          builder: (ctx, state) => EditorScreen(
             variantId: state.pathParameters['id']!,
+            repository: ctx.read<CvRepository>(),
+            onBack: () => ctx.pop(),
           ),
         ),
       ],
@@ -147,29 +153,6 @@ class _StorageErrorScreen extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Temporary placeholder for the Editor screen (lands with the editor slice).
-class _EditorPlaceholder extends StatelessWidget {
-  const _EditorPlaceholder({required this.variantId});
-
-  final String variantId;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Editor'),
-        leading: BackButton(onPressed: () => context.pop()),
-      ),
-      body: Center(
-        child: Text(
-          'Editor per variante $variantId\n(landing con il prossimo ticket)',
-          textAlign: TextAlign.center,
         ),
       ),
     );
