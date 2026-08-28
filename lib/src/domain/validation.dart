@@ -1,14 +1,33 @@
 /// Semantic invariants for a [CvDocument] (tickets 01, 02, 03).
 ///
-/// These checks catch integrity violations before the document is persisted:
-/// they are the "soft-required" backstop for the auto-save flow described in
-/// ticket 04. UI-level "obbligatori mancanti" warnings (ticket 07) run
-/// separately and do not block editing.
+/// Le regole sono divise in due famiglie, perché rispondono a due domande
+/// diverse:
+///
+///  * **strutturali** — il documento è *coerente*? Titoli unici, `kind`
+///    fissi non ripetuti, id presenti e univoci, `current` xor `endDate`,
+///    range di date sensati, riferimenti ad asset risolvibili. Un
+///    documento che viola queste regole è corrotto: nessuna quantità di
+///    digitazione lo rende sensato, quindi non deve mai finire su disco.
+///    Applicate da `save()`, dal caricamento e dall'import.
+///  * **completezza** — i campi obbligatori sono compilati? Una bozza in
+///    lavorazione li viola di continuo, per definizione (ticket 07:
+///    "nessun blocco durante l'editing"). Non impediscono il salvataggio:
+///    sono ciò che l'export segnala all'utente prima di produrre il PDF.
+///
+/// Di conseguenza:
+///  * [validateStructure] → solo strutturali, usata dalla persistenza;
+///  * [completenessIssues] → elenco non bloccante dei campi mancanti;
+///  * [validate] → entrambe, per i punti in cui pretendiamo un CV finito.
+///
+/// La conoscenza di *quali* campi sono obbligatori vive in un posto solo,
+/// [analyzeMissingRequired] (`missing_required.dart`): i badge ⚠
+/// dell'editor e gli avvisi di export leggono la stessa fonte.
 library;
 
 import 'cv_document.dart';
 import 'cv_section.dart';
 import 'enums.dart';
+import 'missing_required.dart';
 
 class CvValidationException implements Exception {
   final List<String> errors;
@@ -18,9 +37,38 @@ class CvValidationException implements Exception {
       'CvValidationException:\n${errors.map((e) => '  - $e').join('\n')}';
 }
 
-/// Throws [CvValidationException] listing every violation, or returns
-/// normally if the document is valid.
+/// Struttura **e** completezza. Throws [CvValidationException] elencando
+/// ogni violazione. Da usare dove serve un CV finito (export), non nel
+/// percorso di salvataggio.
 void validate(CvDocument doc) {
+  final errors = [..._structuralErrors(doc), ...completenessIssues(doc)];
+  if (errors.isNotEmpty) {
+    throw CvValidationException(errors);
+  }
+}
+
+/// Solo invarianti strutturali. È ciò che protegge il file su disco: una
+/// bozza incompleta passa, un documento incoerente no.
+void validateStructure(CvDocument doc) {
+  final errors = _structuralErrors(doc);
+  if (errors.isNotEmpty) {
+    throw CvValidationException(errors);
+  }
+}
+
+/// Elenco leggibile dei campi obbligatori mancanti. Non lancia: il
+/// chiamante decide se avvisare, bloccare o ignorare.
+List<String> completenessIssues(CvDocument doc) {
+  final missing = analyzeMissingRequired(doc);
+  return [
+    for (final m in missing.fields)
+      m.itemId == null
+          ? 'sections[${m.sectionIndex}].${m.field} is required'
+          : 'sections[${m.sectionIndex}].items[${m.itemId}].${m.field} is required',
+  ];
+}
+
+List<String> _structuralErrors(CvDocument doc) {
   final errors = <String>[];
 
   if (doc.variantName.trim().isEmpty) {
@@ -78,13 +126,10 @@ void validate(CvDocument doc) {
     final s = doc.sections[i];
     final path = 'sections[$i]';
     switch (s) {
-      case AnagraficaSection(:final data):
-        if (data.nome.trim().isEmpty) {
-          errors.add('$path.data.nome is required');
-        }
-        if (data.cognome.trim().isEmpty) {
-          errors.add('$path.data.cognome is required');
-        }
+      case AnagraficaSection():
+        // nome/cognome sono completezza, non struttura: vedi
+        // `completenessIssues`.
+        break;
       case ContattiSection():
         break; // no strict requirements
       case SommarioSection():
@@ -95,8 +140,6 @@ void validate(CvDocument doc) {
           final it = items[j];
           final ip = '$path.items[$j]';
           if (it.id.isEmpty) errors.add('$ip.id required');
-          if (it.ruolo.trim().isEmpty) errors.add('$ip.ruolo required');
-          if (it.azienda.trim().isEmpty) errors.add('$ip.azienda required');
           if (it.current && it.endDate != null) {
             errors.add('$ip cannot have both current=true and endDate');
           }
@@ -110,7 +153,6 @@ void validate(CvDocument doc) {
           final it = items[j];
           final ip = '$path.items[$j]';
           if (it.id.isEmpty) errors.add('$ip.id required');
-          if (it.titolo.trim().isEmpty) errors.add('$ip.titolo required');
           if (it.current && it.endDate != null) {
             errors.add('$ip cannot have both current=true and endDate');
           }
@@ -128,7 +170,6 @@ void validate(CvDocument doc) {
           final it = items[j];
           final ip = '$path.items[$j]';
           if (it.id.isEmpty) errors.add('$ip.id required');
-          if (it.lingua.trim().isEmpty) errors.add('$ip.lingua required');
         }
       case CertificazioniSection(:final items):
         _validateListIds(items.map((i) => i.id).toList(), path, errors);
@@ -136,8 +177,6 @@ void validate(CvDocument doc) {
           final it = items[j];
           final ip = '$path.items[$j]';
           if (it.id.isEmpty) errors.add('$ip.id required');
-          if (it.nome.trim().isEmpty) errors.add('$ip.nome required');
-          if (it.ente.trim().isEmpty) errors.add('$ip.ente required');
         }
       case CustomSection():
         if (s.id.isEmpty) errors.add('$path.id required for custom section');
@@ -152,9 +191,7 @@ void validate(CvDocument doc) {
     }
   }
 
-  if (errors.isNotEmpty) {
-    throw CvValidationException(errors);
-  }
+  return errors;
 }
 
 void _validateListIds(List<String> ids, String path, List<String> errors) {

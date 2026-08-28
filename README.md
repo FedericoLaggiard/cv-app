@@ -4,7 +4,7 @@ Implementazione dell'MVP descritto in [`docs/cv-app/map.md`](../docs/cv-app/map.
 
 ## Cosa c'è oggi
 
-Questa iterazione contiene il **layer fondamentale** (tickets 01→04):
+Questa iterazione copre i tickets 01→04, 07 e 14:
 
 - **Schema dati tipizzato** (`lib/src/domain/`)
   - `SectionKind`, enum CEFR / modalità / contratto / genere / stato civile
@@ -20,28 +20,54 @@ Questa iterazione contiene il **layer fondamentale** (tickets 01→04):
   - `schemaVersion > CURRENT` → `CvSchemaTooNewException` (refuse-if-newer).
   - Migrations forward-only in `migrations.dart` (v1 = no-op oggi; agganciare
     `_migrate_N_to_Np1` al bump).
-- **Invarianti** (`validation.dart`)
-  - Unicità `displayTitle` case-insensitive + trim.
-  - Unicità `kind` per sezioni non-custom.
-  - Item id univoci dentro le liste.
-  - Campi obbligatori (nome/cognome, ruolo+azienda+start, titolo, lingua+livello, nome+ente).
-  - `current` xor `endDate`; range date coerenti.
+- **Invarianti** (`validation.dart`) — divise in due famiglie, perché
+  rispondono a due domande diverse:
+  - `validateStructure()` — **coerenza**, applicata da `save()`, dal
+    caricamento e dall'import: unicità `displayTitle` (case-insensitive +
+    trim), unicità `kind` per sezioni non-custom, item id presenti e
+    univoci, `current` xor `endDate`, range date coerenti, riferimenti
+    asset risolvibili. Un documento che le viola è corrotto e non finisce
+    mai su disco.
+  - `completenessIssues()` — **completezza** (nome/cognome, ruolo+azienda,
+    titolo, lingua, nome+ente): non blocca nulla. Una bozza li viola per
+    definizione mentre l'utente digita (ticket 07, "nessun blocco durante
+    l'editing"); sono ciò che l'export segnala prima di produrre il PDF.
+    Derivati da `analyzeMissingRequired()` (`missing_required.dart`), la
+    stessa fonte che accende i badge ⚠ nell'editor.
+  - `validate()` — entrambe insieme, per i punti in cui pretendiamo un CV
+    finito.
 - **Asset GC** al save (`garbageCollectAssets`).
 - **`CvRepository`** astratto + `InMemoryCvRepository` (`lib/src/repository/`).
   - Stream reattivi per Libreria/Editor, `Future` per azioni.
   - Naming duplicati coerente col ticket 14 (`<name> (N)`).
   - `ImportResult` sealed: Success/Conflict/Corrupt.
+- **Backend concreti** del repository: `path_provider` (desktop/mobile) e
+  `idb_shim` (web), scelti da `defaultCvRepository()` — ticket 04.
+- **Schermata Libreria** (`lib/src/ui/library/`) — card variante, menu
+  Duplica/Rinomina/Esporta/Elimina, stato vuoto con CTA — ticket 14.
+- **Editor strutturato** (`lib/src/ui/editor/`) — ticket 07:
+  - `EditorBloc`: `watch(id)` in lettura, auto-save con debounce 800 ms,
+    stato di collapse per sezione tenuto in memoria (non serializzato).
+  - Layout a due colonne ≥ 900 px (sidebar-indice + scroll unico), colonna
+    singola con indice a bottom sheet sotto.
+  - Form tipizzati per Anagrafica, Contatti, Esperienze, Formazione, Skill,
+    Lingue, Certificazioni; riordino sezioni via drag handle + menu `[⋯]`;
+    dialog `Aggiungi sezione` (fisse mancanti + custom).
+  - Badge ⚠ soft su indice, header sezione e voce; nessun blocco
+    all'editing, nessun salvataggio perso.
 
 ## Cosa **non** c'è ancora
 
 Per iterazione futura, in ordine dei ticket:
 
-- Backend concreti del repository (`path_provider` desktop/mobile, `idb_shim`
-  web) — ticket 04.
 - Import PDF (`pdfrx` + euristiche) — ticket 05, 10, 12, 13.
-- Editor + Libreria + Preview con Bloc/Cubit e `super_editor` — ticket 07, 14.
+- Editing rich text con `super_editor` — oggi Sommario, Sezioni custom e la
+  descrizione di Skill mostrano un placeholder; le descrizioni di
+  Esperienze/Formazione sono `TextField` multilinea in attesa del Markdown.
+- Foto profilo nell'editor (`AnagraficaData.foto`) — ticket 09.
+- Route anteprima PDF a piena pagina + dialog "campi mancanti / Esporta
+  comunque" che consuma `completenessIssues()` — ticket 08.
 - Template PDF Classico/Moderno/Minimal (`pdf` + `printing`) — ticket 08.
-- Foto profilo + normalizzazione — ticket 09.
 - i18n IT/EN (ARB) + Impostazioni — ticket 15.
 - Onboarding overlay — ticket 16.
 - E2E Patrol locale — ticket 17.

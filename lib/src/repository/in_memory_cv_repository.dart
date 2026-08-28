@@ -98,7 +98,7 @@ class InMemoryCvRepository implements CvRepository {
       throw DuplicateVariantNameException(doc.variantName.trim());
     }
     final gcd = garbageCollectAssets(doc);
-    validate(gcd);
+    validateStructure(gcd);
     final stamped = gcd.copyWith(updatedAt: _now().toUtc());
     _byId[stamped.id] = stamped;
     _bump.add(null);
@@ -121,7 +121,7 @@ class InMemoryCvRepository implements CvRepository {
     final CvDocument doc;
     try {
       doc = CvDocumentCodec.fromJsonString(source);
-      validate(doc);
+      validateStructure(doc);
     } on FormatException catch (e) {
       return ImportCorrupt('malformed JSON: ${e.message}');
     } on CvSchemaException catch (e) {

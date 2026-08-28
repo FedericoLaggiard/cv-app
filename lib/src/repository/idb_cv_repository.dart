@@ -134,7 +134,7 @@ class IdbCvRepository implements CvRepository {
     try {
       final json = _asJsonString(raw);
       final doc = CvDocumentCodec.fromJsonString(json);
-      validate(doc);
+      validateStructure(doc);
       return doc;
     } catch (_) {
       return null;
@@ -195,7 +195,7 @@ class IdbCvRepository implements CvRepository {
   @override
   Future<void> save(CvDocument doc) async {
     final gcd = garbageCollectAssets(doc);
-    validate(gcd);
+    validateStructure(gcd);
     final stamped = gcd.copyWith(updatedAt: _now().toUtc());
     await _persist(stamped);
   }
@@ -242,7 +242,7 @@ class IdbCvRepository implements CvRepository {
     CvDocument doc;
     try {
       doc = CvDocumentCodec.fromJsonString(source);
-      validate(doc);
+      validateStructure(doc);
     } on FormatException catch (e) {
       return ImportCorrupt('malformed JSON: ${e.message}');
     } on CvSchemaException catch (e) {
