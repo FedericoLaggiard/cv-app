@@ -45,11 +45,10 @@ class PathProviderCvRepository implements CvRepository {
   bool _bootstrapDone = false;
 
   PathProviderCvRepository({
-    required FileSystemService fs,
+    required this._fs,
     Uuid? uuid,
     DateTime Function()? now,
-  })  : _fs = fs,
-        _uuid = uuid ?? const Uuid(),
+  })  : _uuid = uuid ?? const Uuid(),
         _now = now ?? DateTime.now;
 
   // ------------------------ bootstrap ------------------------
@@ -118,26 +117,66 @@ class PathProviderCvRepository implements CvRepository {
 
   // ------------------------ streams ------------------------
 
+  // StreamController esplicito invece di `async*` + `await for`: cancellare
+  // la subscription di un `async*` fermo su `await for` di un broadcast
+  // stream non si sblocca finché quello stream non emette di nuovo (bug
+  // di cancellazione dei generator asincroni, emerso misurando i tempi dei
+  // test dopo l'upgrade SDK del ticket 19).
+
   @override
-  Stream<List<VariantSummary>> watchAll() async* {
-    await _bootstrap();
-    yield _snapshot();
-    await for (final _ in _bump.stream) {
-      yield _snapshot();
-    }
+  Stream<List<VariantSummary>> watchAll() {
+    StreamSubscription<void>? bumpSub;
+    final controller = StreamController<List<VariantSummary>>(
+      // scheduleMicrotask: cancellare la subscription su `_bump` a
+      // bruciapelo da dentro l'`onCancel` sincrono di *questo* controller
+      // (rientrante nel dispatch dell'evento iniziale quando il chiamante
+      // usa `.first`) deadlocka il test runner. Un giro di microtask rompe
+      // la rientranza.
+      onCancel: () => scheduleMicrotask(() => bumpSub?.cancel()),
+    );
+    controller.onListen = () async {
+      await _bootstrap();
+      if (controller.isClosed) return;
+      bumpSub = _bump.stream.listen((_) {
+        if (!controller.isClosed) controller.add(_snapshot());
+      });
+      controller.add(_snapshot());
+    };
+    return controller.stream;
   }
 
   @override
-  Stream<CvDocument> watch(String id) async* {
-    await _bootstrap();
-    final initial = _cache[id];
-    if (initial == null) throw CvRepositoryNotFound(id);
-    yield initial;
-    await for (final _ in _bump.stream) {
-      final doc = _cache[id];
-      if (doc == null) return; // deleted → close the stream
-      yield doc;
-    }
+  Stream<CvDocument> watch(String id) {
+    StreamSubscription<void>? bumpSub;
+    final controller = StreamController<CvDocument>(
+      // scheduleMicrotask: cancellare la subscription su `_bump` a
+      // bruciapelo da dentro l'`onCancel` sincrono di *questo* controller
+      // (rientrante nel dispatch dell'evento iniziale quando il chiamante
+      // usa `.first`) deadlocka il test runner. Un giro di microtask rompe
+      // la rientranza.
+      onCancel: () => scheduleMicrotask(() => bumpSub?.cancel()),
+    );
+    controller.onListen = () async {
+      await _bootstrap();
+      if (controller.isClosed) return;
+      final initial = _cache[id];
+      if (initial == null) {
+        controller.addError(CvRepositoryNotFound(id));
+        controller.close();
+        return;
+      }
+      bumpSub = _bump.stream.listen((_) {
+        if (controller.isClosed) return;
+        final doc = _cache[id];
+        if (doc == null) {
+          controller.close(); // deleted → close the stream
+          return;
+        }
+        controller.add(doc);
+      });
+      controller.add(initial);
+    };
+    return controller.stream;
   }
 
   List<VariantSummary> _snapshot() {

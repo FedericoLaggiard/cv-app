@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.11.0
+  sdk: ^3.13.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -41,17 +41,15 @@ dependencies:
 
   # Stack MVP (ticket 06 + amendments 15/17).
   # Vedi docs/cv-app/issues/06-scelta-stack-flutter.md.
-  # Nota: pdf/printing e freezed sono pinnati a versioni compatibili con
-  # il Dart SDK ^3.11.0 dichiarato piu' sotto (pdf 3.13/printing 5.15/freezed 4.x
-  # richiedono Dart >=3.12). Le major sono quelle scelte dal ticket 06;
-  # bumpare quando bumperemo il SDK.
+  # Nota: le versioni minime sono state alzate col bump SDK del ticket 19
+  # (Flutter 3.47.2 / Dart 3.13); le major restano quelle scelte dal ticket 06.
   flutter_bloc: ^9.1.1              # state management (MIT)
   go_router: ^17.5.0                # routing (BSD-3-Clause)
-  pdf: ^3.12.0                      # PDF generation (Apache-2.0)
-  printing: ^5.14.0                 # PDF preview/share/print (Apache-2.0)
+  pdf: ^3.13.0                      # PDF generation (Apache-2.0)
+  printing: ^5.15.0                 # PDF preview/share/print (Apache-2.0)
   file_picker: ^12.0.0              # import + saveFile() (MIT)
   share_plus: ^13.3.0               # share sheet + web download (BSD-3-Clause)
-  idb_shim: ^2.9.0                  # IndexedDB wrapper (BSD-3-Clause) - 2.9.2 e' l'ultima compat Dart 3.11
+  idb_shim: ^2.9.0                  # IndexedDB wrapper (BSD-3-Clause)
   path_provider: ^2.1.5             # storage paths desktop/mobile (BSD-3-Clause)
   freezed_annotation: ^3.1.0        # v3.x pinned (report ticket 06)
   json_annotation: ^4.9.0
@@ -75,9 +73,10 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
   # Code generation per freezed + json_serializable (ticket 06).
-  # freezed pinnato a v3.x (v4 richiede Dart >=3.13).
+  # freezed sbloccato a v4.x col bump SDK del ticket 19 (v4 richiede Dart
+  # >=3.13); non ancora usato nel codice, la migrazione e' il ticket 21.
   build_runner: ^2.4.13
-  freezed: ^3.0.0
+  freezed: ^4.0.0
   json_serializable: ^6.14.1
 
   # BLoC unit-test helpers (companion a flutter_bloc).

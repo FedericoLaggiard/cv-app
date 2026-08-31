@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:cv_app/src/domain/cv_document.dart';
 import 'package:cv_app/src/domain/cv_section.dart';
 import 'package:cv_app/src/domain/enums.dart';
 import 'package:cv_app/src/repository/cv_repository.dart';
@@ -158,9 +161,12 @@ void main() {
       bloc.add(EditorStarted(id));
       await _pumpEventLoop();
 
-      // Aggiungi qualche sezione così ci sono indici da rimappare.
+      // Aggiungi qualche sezione così ci sono indici da rimappare. Servono
+      // almeno 3 sezioni: con solo 2, l'indice "0" e l'indice "ultimo dopo
+      // la rimozione" coincidono e le due expect sotto si contraddicono.
       bloc.add(const SectionAdded.fixed(SectionKind.lingue));
       bloc.add(const SectionAdded.fixed(SectionKind.certificazioni));
+      bloc.add(const SectionAdded.fixed(SectionKind.skill));
       await _pumpEventLoop();
 
       final total = (bloc.state as EditorReady).document.sections.length;
@@ -190,7 +196,11 @@ void main() {
       bloc.add(EditorStarted(id));
       await _pumpEventLoop();
 
+      // Servono almeno 2 sezioni: con una sola, spostarla "in fondo" è un
+      // no-op e l'indice "0" coincide con "n-1", contraddicendo le expect
+      // sotto.
       bloc.add(const SectionAdded.fixed(SectionKind.lingue));
+      bloc.add(const SectionAdded.fixed(SectionKind.certificazioni));
       await _pumpEventLoop();
 
       final beforeSections =
@@ -262,6 +272,13 @@ void main() {
       bloc.add(EditorStarted(id));
       await _pumpEventLoop();
 
+      // Un documento appena creato non ha sezioni: ne serve almeno una da
+      // collassare, altrimenti "rimuove solo l'indice richiesto" non ha
+      // niente da rimuovere.
+      bloc.add(const SectionAdded.fixed(SectionKind.lingue));
+      bloc.add(const SectionAdded.fixed(SectionKind.certificazioni));
+      await _pumpEventLoop();
+
       bloc.add(const AllSectionsCollapseSet(true));
       await _pumpEventLoop();
       final beforeN = (bloc.state as EditorReady).collapsed.length;
@@ -324,20 +341,21 @@ class _CountingRepo implements CvRepository {
   }
 
   @override
-  Stream watchAll() => _inner.watchAll();
+  Stream<List<VariantSummary>> watchAll() => _inner.watchAll();
   @override
-  Stream watch(String id) => _inner.watch(id);
+  Stream<CvDocument> watch(String id) => _inner.watch(id);
   @override
-  Future create({String? initialVariantName}) =>
+  Future<CvDocument> create({String? initialVariantName}) =>
       _inner.create(initialVariantName: initialVariantName);
   @override
-  Future duplicate(String id) => _inner.duplicate(id);
+  Future<CvDocument> duplicate(String id) => _inner.duplicate(id);
   @override
   Future<void> delete(String id) => _inner.delete(id);
   @override
-  Future importFromBytes(bytes) => _inner.importFromBytes(bytes);
+  Future<ImportResult> importFromBytes(Uint8List bytes) =>
+      _inner.importFromBytes(bytes);
   @override
-  Future exportToBytes(String id) => _inner.exportToBytes(id);
+  Future<Uint8List> exportToBytes(String id) => _inner.exportToBytes(id);
 }
 
 /// Repo che permette di far fallire la prossima save on-demand.
@@ -356,20 +374,21 @@ class _FailingSaveRepo implements CvRepository {
   }
 
   @override
-  Stream watchAll() => _inner.watchAll();
+  Stream<List<VariantSummary>> watchAll() => _inner.watchAll();
   @override
-  Stream watch(String id) => _inner.watch(id);
+  Stream<CvDocument> watch(String id) => _inner.watch(id);
   @override
-  Future create({String? initialVariantName}) =>
+  Future<CvDocument> create({String? initialVariantName}) =>
       _inner.create(initialVariantName: initialVariantName);
   @override
-  Future duplicate(String id) => _inner.duplicate(id);
+  Future<CvDocument> duplicate(String id) => _inner.duplicate(id);
   @override
   Future<void> delete(String id) => _inner.delete(id);
   @override
-  Future importFromBytes(bytes) => _inner.importFromBytes(bytes);
+  Future<ImportResult> importFromBytes(Uint8List bytes) =>
+      _inner.importFromBytes(bytes);
   @override
-  Future exportToBytes(String id) => _inner.exportToBytes(id);
+  Future<Uint8List> exportToBytes(String id) => _inner.exportToBytes(id);
 }
 
 // Assicura che `Uuid` sia disponibile (importato più su) — usato indirettamente
