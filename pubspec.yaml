@@ -87,6 +87,11 @@ dev_dependencies:
   # `dart pub global activate patrol_cli`.
   patrol: ^4.9.0
 
+  # CI locale al commit (ticket 18): complessita' ciclomatica offline
+  # (MIT, fork mantenuto di DCM) + hook git installati via `make setup-hooks`.
+  dart_code_linter: ^4.3.0
+  husky: ^0.1.7
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
