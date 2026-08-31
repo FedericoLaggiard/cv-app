@@ -46,15 +46,42 @@ class InMemoryCvRepository implements CvRepository {
   }
 
   @override
-  Stream<CvDocument> watch(String id) async* {
-    final initial = _byId[id];
-    if (initial == null) throw CvRepositoryNotFound(id);
-    yield initial;
-    await for (final _ in _bump.stream) {
-      final doc = _byId[id];
-      if (doc == null) return; // deleted → close the stream
-      yield doc;
-    }
+  Stream<CvDocument> watch(String id) {
+    // StreamController esplicito invece di `async*` + `await for`: cancellare
+    // la subscription di un `async*` fermo su `await for` di un broadcast
+    // stream non si sblocca finché quello stream non emette di nuovo (bug
+    // di cancellazione dei generator asincroni, non specifico di Dart 3.13
+    // ma emerso misurando i tempi dei test dopo l'upgrade del ticket 19).
+    // Stesso pattern già usato da `watchAll()` qui sopra.
+    StreamSubscription<void>? bumpSub;
+    final controller = StreamController<CvDocument>(
+      // `scheduleMicrotask` invece di chiamare `.cancel()` a bruciapelo:
+      // cancellare una subscription su `_bump` (broadcast) da dentro
+      // l'`onCancel` sincrono di *questo* controller — a sua volta invocato
+      // da dentro il dispatch dell'evento iniziale di `.first` — deadlocka
+      // il test runner (verificato: senza il defer l'isolate si blocca a
+      // CPU zero). Un giro di microtask rompe la rientranza.
+      onCancel: () => scheduleMicrotask(() => bumpSub?.cancel()),
+    );
+    controller.onListen = () {
+      final initial = _byId[id];
+      if (initial == null) {
+        controller.addError(CvRepositoryNotFound(id));
+        controller.close();
+        return;
+      }
+      bumpSub = _bump.stream.listen((_) {
+        if (controller.isClosed) return;
+        final doc = _byId[id];
+        if (doc == null) {
+          controller.close(); // deleted → close the stream
+          return;
+        }
+        controller.add(doc);
+      });
+      controller.add(initial);
+    };
+    return controller.stream;
   }
 
   @override

@@ -60,8 +60,35 @@ class YearMonthField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(effectiveLabel, style: labelStyle),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                effectiveLabel,
+                style: labelStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (value != null && enabled)
+              InkWell(
+                onTap: () => onChanged(null),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(
+                    Icons.close,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: 4),
+        // Il pulsante "Cancella" vive accanto alla label (sopra), non in
+        // questa Row: qui c'è già poco spazio per due DropdownButton
+        // affiancati (colonna "Data inizio/fine" in EsperienzeForm), e un
+        // terzo elemento a larghezza fissa li fa andare in overflow.
         Row(
           children: [
             Expanded(
@@ -128,12 +155,6 @@ class YearMonthField extends StatelessWidget {
                 ),
               ),
             ),
-            if (value != null && enabled)
-              IconButton(
-                tooltip: 'Cancella',
-                icon: const Icon(Icons.close, size: 18),
-                onPressed: () => onChanged(null),
-              ),
           ],
         ),
       ],

@@ -237,10 +237,9 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
   EditorBloc({
     required CvRepository repository,
     Uuid? uuid,
-    Duration debounce = kAutoSaveDebounce,
+    this._debounce = kAutoSaveDebounce,
   })  : _repo = repository,
         _uuid = uuid ?? const Uuid(),
-        _debounce = debounce,
         super(const EditorInitial()) {
     on<EditorStarted>(_onStarted);
     on<_DocumentReceived>(_onDocumentReceived);
