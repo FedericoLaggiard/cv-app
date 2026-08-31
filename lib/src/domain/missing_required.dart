@@ -81,6 +81,12 @@ class MissingRequired {
       ));
 }
 
+typedef _AddMissing = void Function(
+  int sectionIndex, {
+  String? itemId,
+  required String field,
+});
+
 MissingRequired analyzeMissingRequired(CvDocument doc) {
   final missing = <MissingField>{};
   void add(int i, {String? itemId, required String field}) {
@@ -88,59 +94,89 @@ MissingRequired analyzeMissingRequired(CvDocument doc) {
   }
 
   for (var i = 0; i < doc.sections.length; i++) {
-    final s = doc.sections[i];
-    switch (s) {
-      case AnagraficaSection(:final data):
-        if (data.nome.trim().isEmpty) add(i, field: 'nome');
-        if (data.cognome.trim().isEmpty) add(i, field: 'cognome');
-      case ContattiSection():
-        break;
-      case SommarioSection():
-        break;
-      case EsperienzeSection(:final items):
-        for (final it in items) {
-          if (it.ruolo.trim().isEmpty) add(i, itemId: it.id, field: 'ruolo');
-          if (it.azienda.trim().isEmpty) {
-            add(i, itemId: it.id, field: 'azienda');
-          }
-        }
-      case FormazioneSection(:final items):
-        for (final it in items) {
-          if (it.titolo.trim().isEmpty) {
-            add(i, itemId: it.id, field: 'titolo');
-          }
-        }
-      case SkillSection():
-        break;
-      case LingueSection(:final items):
-        for (final it in items) {
-          if (it.lingua.trim().isEmpty) {
-            add(i, itemId: it.id, field: 'lingua');
-          }
-        }
-      case CertificazioniSection(:final items):
-        for (final it in items) {
-          if (it.nome.trim().isEmpty) add(i, itemId: it.id, field: 'nome');
-          if (it.ente.trim().isEmpty) add(i, itemId: it.id, field: 'ente');
-        }
-      case CustomSection():
-        break;
-    }
+    _missingForSection(i, doc.sections[i], add);
   }
 
+  return MissingRequired(
+    fields: missing,
+    perSection: _countBySection(missing),
+    perItem: _countByItem(missing),
+  );
+}
+
+void _missingForSection(int i, CvSection s, _AddMissing add) {
+  switch (s) {
+    case AnagraficaSection(:final data):
+      _missingAnagrafica(i, data, add);
+    case ContattiSection():
+      break;
+    case SommarioSection():
+      break;
+    case EsperienzeSection(:final items):
+      _missingEsperienze(i, items, add);
+    case FormazioneSection(:final items):
+      _missingFormazione(i, items, add);
+    case SkillSection():
+      break;
+    case LingueSection(:final items):
+      _missingLingue(i, items, add);
+    case CertificazioniSection(:final items):
+      _missingCertificazioni(i, items, add);
+    case CustomSection():
+      break;
+  }
+}
+
+void _missingAnagrafica(int i, AnagraficaData data, _AddMissing add) {
+  if (data.nome.trim().isEmpty) add(i, field: 'nome');
+  if (data.cognome.trim().isEmpty) add(i, field: 'cognome');
+}
+
+void _missingEsperienze(int i, List<EsperienzaItem> items, _AddMissing add) {
+  for (final it in items) {
+    if (it.ruolo.trim().isEmpty) add(i, itemId: it.id, field: 'ruolo');
+    if (it.azienda.trim().isEmpty) add(i, itemId: it.id, field: 'azienda');
+  }
+}
+
+void _missingFormazione(int i, List<FormazioneItem> items, _AddMissing add) {
+  for (final it in items) {
+    if (it.titolo.trim().isEmpty) add(i, itemId: it.id, field: 'titolo');
+  }
+}
+
+void _missingLingue(int i, List<LinguaItem> items, _AddMissing add) {
+  for (final it in items) {
+    if (it.lingua.trim().isEmpty) add(i, itemId: it.id, field: 'lingua');
+  }
+}
+
+void _missingCertificazioni(
+  int i,
+  List<CertificazioneItem> items,
+  _AddMissing add,
+) {
+  for (final it in items) {
+    if (it.nome.trim().isEmpty) add(i, itemId: it.id, field: 'nome');
+    if (it.ente.trim().isEmpty) add(i, itemId: it.id, field: 'ente');
+  }
+}
+
+Map<int, int> _countBySection(Set<MissingField> missing) {
   final perSection = <int, int>{};
-  final perItem = <String, int>{};
   for (final m in missing) {
     perSection.update(m.sectionIndex, (v) => v + 1, ifAbsent: () => 1);
+  }
+  return perSection;
+}
+
+Map<String, int> _countByItem(Set<MissingField> missing) {
+  final perItem = <String, int>{};
+  for (final m in missing) {
     final id = m.itemId;
     if (id != null) {
       perItem.update(id, (v) => v + 1, ifAbsent: () => 1);
     }
   }
-
-  return MissingRequired(
-    fields: missing,
-    perSection: perSection,
-    perItem: perItem,
-  );
+  return perItem;
 }

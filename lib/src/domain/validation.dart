@@ -70,15 +70,25 @@ List<String> completenessIssues(CvDocument doc) {
 
 List<String> _structuralErrors(CvDocument doc) {
   final errors = <String>[];
+  _headerErrors(doc, errors);
+  _titleErrors(doc, errors);
+  _kindErrors(doc, errors);
+  _sectionErrors(doc, errors);
+  _assetReferenceErrors(doc, errors);
+  return errors;
+}
 
+void _headerErrors(CvDocument doc, List<String> errors) {
   if (doc.variantName.trim().isEmpty) {
     errors.add('variantName must be non-empty');
   }
   if (doc.id.isEmpty) {
     errors.add('id must be non-empty');
   }
+}
 
-  // displayTitle uniqueness (case-insensitive + trim) and non-emptiness.
+/// displayTitle uniqueness (case-insensitive + trim) and non-emptiness.
+void _titleErrors(CvDocument doc, List<String> errors) {
   final normalizedTitles = <String, int>{};
   for (var i = 0; i < doc.sections.length; i++) {
     final title = doc.sections[i].displayTitle;
@@ -97,8 +107,10 @@ List<String> _structuralErrors(CvDocument doc) {
       normalizedTitles[key] = i;
     }
   }
+}
 
-  // Kind uniqueness for non-custom sections, and id uniqueness for custom.
+/// Kind uniqueness for non-custom sections, and id uniqueness for custom.
+void _kindErrors(CvDocument doc, List<String> errors) {
   final seenKinds = <SectionKind>{};
   final seenCustomIds = <String, int>{};
   for (var i = 0; i < doc.sections.length; i++) {
@@ -120,8 +132,10 @@ List<String> _structuralErrors(CvDocument doc) {
       }
     }
   }
+}
 
-  // Per-section invariants.
+/// Per-section invariants, dispatched by section kind.
+void _sectionErrors(CvDocument doc, List<String> errors) {
   for (var i = 0; i < doc.sections.length; i++) {
     final s = doc.sections[i];
     final path = 'sections[$i]';
@@ -135,63 +149,93 @@ List<String> _structuralErrors(CvDocument doc) {
       case SommarioSection():
         break;
       case EsperienzeSection(:final items):
-        _validateListIds(items.map((i) => i.id).toList(), path, errors);
-        for (var j = 0; j < items.length; j++) {
-          final it = items[j];
-          final ip = '$path.items[$j]';
-          if (it.id.isEmpty) errors.add('$ip.id required');
-          if (it.current && it.endDate != null) {
-            errors.add('$ip cannot have both current=true and endDate');
-          }
-          if (it.endDate != null && it.endDate!.compareTo(it.startDate) < 0) {
-            errors.add('$ip.endDate is before startDate');
-          }
-        }
+        _esperienzeErrors(items, path, errors);
       case FormazioneSection(:final items):
-        _validateListIds(items.map((i) => i.id).toList(), path, errors);
-        for (var j = 0; j < items.length; j++) {
-          final it = items[j];
-          final ip = '$path.items[$j]';
-          if (it.id.isEmpty) errors.add('$ip.id required');
-          if (it.current && it.endDate != null) {
-            errors.add('$ip cannot have both current=true and endDate');
-          }
-          if (it.startDate != null &&
-              it.endDate != null &&
-              it.endDate!.compareTo(it.startDate!) < 0) {
-            errors.add('$ip.endDate is before startDate');
-          }
-        }
+        _formazioneErrors(items, path, errors);
       case SkillSection():
         break;
       case LingueSection(:final items):
-        _validateListIds(items.map((i) => i.id).toList(), path, errors);
-        for (var j = 0; j < items.length; j++) {
-          final it = items[j];
-          final ip = '$path.items[$j]';
-          if (it.id.isEmpty) errors.add('$ip.id required');
-        }
+        _lingueErrors(items, path, errors);
       case CertificazioniSection(:final items):
-        _validateListIds(items.map((i) => i.id).toList(), path, errors);
-        for (var j = 0; j < items.length; j++) {
-          final it = items[j];
-          final ip = '$path.items[$j]';
-          if (it.id.isEmpty) errors.add('$ip.id required');
-        }
+        _certificazioniErrors(items, path, errors);
       case CustomSection():
         if (s.id.isEmpty) errors.add('$path.id required for custom section');
     }
   }
+}
 
-  // Referenced assets must exist in the assets store.
+void _esperienzeErrors(
+  List<EsperienzaItem> items,
+  String path,
+  List<String> errors,
+) {
+  _validateListIds(items.map((i) => i.id).toList(), path, errors);
+  for (var j = 0; j < items.length; j++) {
+    final it = items[j];
+    final ip = '$path.items[$j]';
+    if (it.id.isEmpty) errors.add('$ip.id required');
+    if (it.current && it.endDate != null) {
+      errors.add('$ip cannot have both current=true and endDate');
+    }
+    if (it.endDate != null && it.endDate!.compareTo(it.startDate) < 0) {
+      errors.add('$ip.endDate is before startDate');
+    }
+  }
+}
+
+void _formazioneErrors(
+  List<FormazioneItem> items,
+  String path,
+  List<String> errors,
+) {
+  _validateListIds(items.map((i) => i.id).toList(), path, errors);
+  for (var j = 0; j < items.length; j++) {
+    final it = items[j];
+    final ip = '$path.items[$j]';
+    if (it.id.isEmpty) errors.add('$ip.id required');
+    if (it.current && it.endDate != null) {
+      errors.add('$ip cannot have both current=true and endDate');
+    }
+    if (it.startDate != null &&
+        it.endDate != null &&
+        it.endDate!.compareTo(it.startDate!) < 0) {
+      errors.add('$ip.endDate is before startDate');
+    }
+  }
+}
+
+void _lingueErrors(
+  List<LinguaItem> items,
+  String path,
+  List<String> errors,
+) {
+  _validateListIds(items.map((i) => i.id).toList(), path, errors);
+  for (var j = 0; j < items.length; j++) {
+    final it = items[j];
+    if (it.id.isEmpty) errors.add('$path.items[$j].id required');
+  }
+}
+
+void _certificazioniErrors(
+  List<CertificazioneItem> items,
+  String path,
+  List<String> errors,
+) {
+  _validateListIds(items.map((i) => i.id).toList(), path, errors);
+  for (var j = 0; j < items.length; j++) {
+    final it = items[j];
+    if (it.id.isEmpty) errors.add('$path.items[$j].id required');
+  }
+}
+
+/// Referenced assets must exist in the assets store.
+void _assetReferenceErrors(CvDocument doc, List<String> errors) {
   final referenced = collectAssetReferences(doc);
   for (final id in referenced) {
     if (!doc.assets.containsKey(id)) {
       errors.add('asset reference `$id` has no matching entry in `assets`');
     }
   }
-
-  return errors;
 }
 
 void _validateListIds(List<String> ids, String path, List<String> errors) {
