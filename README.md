@@ -55,6 +55,16 @@ Questa iterazione copre i tickets 01→04, 07 e 14:
     dialog `Aggiungi sezione` (fisse mancanti + custom).
   - Badge ⚠ soft su indice, header sezione e voce; nessun blocco
     all'editing, nessun salvataggio perso.
+- **CI locale al commit** (`Makefile`, `.husky/`) — ticket 18:
+  - `pre-commit` esegue `make ci-fast` (registry + analyze + test +
+    complessità); `pre-push` è vuoto.
+  - `flutter analyze --fatal-infos --fatal-warnings`, tolleranza zero.
+  - Complessità ciclomatica via `dart_code_linter`: CC 10 / nesting 5 su
+    `lib/src/domain/` e `lib/src/repository/`, CC 20 / nesting 5 su
+    `lib/src/ui/` e `lib/src/app/`; nessuna esclusione oltre ai generati.
+  - `check-registry` blocca un `pubspec.lock` che punta a un registry
+    diverso da pub.dev.
+  - Bypass: `git commit --no-verify`.
 
 ## Cosa **non** c'è ancora
 
@@ -81,6 +91,6 @@ stabilizzata dai ticket UI.
 ```bash
 cd src
 flutter pub get
-flutter analyze
-flutter test
+make setup-hooks   # installa gli hook git (una volta, dopo il clone)
+make ci-fast       # registry + analyze + test + complessità (girato anche al commit)
 ```
