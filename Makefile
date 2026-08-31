@@ -8,7 +8,7 @@ setup-hooks:
 	dart run husky install
 
 check-registry:
-	@bad=$$(grep -oE 'url: "[^"]*"' pubspec.lock | sort -u | grep -v 'pub\.dev\|pub\.dartlang\.org' || true); \
+	@bad=$$(grep -oE 'url: "[^"]*"' pubspec.lock | sort -u | grep -v 'url: "https://pub\.dev"' || true); \
 	if [ -n "$$bad" ]; then \
 		echo "pubspec.lock references a non-pub.dev registry:"; \
 		echo "$$bad"; \
