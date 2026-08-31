@@ -409,14 +409,19 @@ class _EditorBody extends StatelessWidget {
       buildDefaultDragHandles: false,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       itemCount: doc.sections.length + 1,
-      onReorder: (oldIndex, newIndex) {
+      onReorderItem: (oldIndex, newIndex) {
         if (oldIndex >= doc.sections.length) return;
-        if (newIndex > doc.sections.length) {
-          newIndex = doc.sections.length;
+        // onReorderItem fornisce gia' l'indice finale post-rimozione;
+        // il bloc (condiviso col menu contestuale di SectionShell) si
+        // aspetta la convenzione "pre-rimozione" del vecchio onReorder,
+        // quindi la invertiamo qui invece di toccare quella logica.
+        var rawNewIndex = newIndex > oldIndex ? newIndex + 1 : newIndex;
+        if (rawNewIndex > doc.sections.length) {
+          rawNewIndex = doc.sections.length;
         }
         context
             .read<EditorBloc>()
-            .add(SectionReordered(oldIndex, newIndex));
+            .add(SectionReordered(oldIndex, rawNewIndex));
       },
       itemBuilder: (context, i) {
         if (i == doc.sections.length) {
