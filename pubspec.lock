@@ -5,32 +5,40 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: "8d7ff3948166b8ec5da0fbb5962000926b8e02f2ed9b3e51d1738905fbd4c98d"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "1b0e6a07425a3e460666e88bf1c949ccc7bb0116ad562ce94a1eca60fe820725"
+      url: "https://pub.dev"
     source: hosted
-    version: "93.0.0"
+    version: "103.0.0"
   analyzer:
     dependency: transitive
     description:
       name: analyzer
-      sha256: de7148ed2fcec579b19f122c1800933dfa028f6d9fd38a152b04b1516cec120b
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "61c04d0c1bfed555c681ea079519933f071a5a026578ff73c4ff0df2d3462e5e"
+      url: "https://pub.dev"
     source: hosted
-    version: "10.0.1"
+    version: "13.3.0"
+  analyzer_buffer:
+    dependency: transitive
+    description:
+      name: analyzer_buffer
+      sha256: f890a2e708e38fbf4238ad2f9fd3d506538acdddb0cd8eb2c3e8c7bd17784b57
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.4"
   android_file_picker:
     dependency: transitive
     description:
       name: android_file_picker
-      sha256: "665a5a57dfca27f91a715d300e4852a784f9f98e503dcff281bec9afb55767be"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "1f111ed6bb33724ba782cc86357e3fd97f57051d55fc61adf33dcfc5049a1581"
+      url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.3"
   archive:
     dependency: transitive
     description:
       name: archive
       sha256: a96e8b390886ee8abb49b7bd3ac8df6f451c621619f52a26e815fdcf568959ff
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "4.0.9"
   args:
@@ -38,7 +46,7 @@ packages:
     description:
       name: args
       sha256: d0481093c50b1da8910eb0bb301626d4d8eb7284aa739614d2b394ee09e3ea04
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.7.0"
   async:
@@ -46,7 +54,7 @@ packages:
     description:
       name: async
       sha256: e2eb0491ba5ddb6177742d2da23904574082139b07c1e33b8503b9f46f3e1a37
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.13.1"
   attributed_text:
@@ -54,7 +62,7 @@ packages:
     description:
       name: attributed_text
       sha256: "73161d761d77e33ae1375e5ea996d609379f4e4a483047605da7e638e9fae8af"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.4.7"
   barcode:
@@ -62,7 +70,7 @@ packages:
     description:
       name: barcode
       sha256: "7b6729c37e3b7f34233e2318d866e8c48ddb46c1f7ad01ff7bb2a8de1da2b9f4"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.2.9"
   bidi:
@@ -70,7 +78,7 @@ packages:
     description:
       name: bidi
       sha256: "77f475165e94b261745cf1032c751e2032b8ed92ccb2bf5716036db79320637d"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.0.13"
   bloc:
@@ -78,7 +86,7 @@ packages:
     description:
       name: bloc
       sha256: e03b235924e4f509c27b5d6b2f949200e0a91149a9818b4f65eeb56662b75413
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "9.2.1"
   bloc_test:
@@ -86,7 +94,7 @@ packages:
     description:
       name: bloc_test
       sha256: "1dd549e58be35148bc22a9135962106aa29334bc1e3f285994946a1057b29d7b"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "10.0.0"
   boolean_selector:
@@ -94,23 +102,23 @@ packages:
     description:
       name: boolean_selector
       sha256: "8aab1771e1243a5063b8b0ff68042d67334e3feab9e95b9490f9a6ebf73b42ea"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
   build:
     dependency: transitive
     description:
       name: build
-      sha256: "45d14a0fb23e018d8287c32fc98d726ce466b231928ed9b9200f29bd3ccd39ae"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: b94f5da9ed3d081fd4ecc426c260998b5f4f4eb2f6d89b7e5472edef0b2b2a1b
+      url: "https://pub.dev"
     source: hosted
-    version: "4.0.7"
+    version: "4.0.10"
   build_config:
     dependency: transitive
     description:
       name: build_config
       sha256: "94eaf6708fe64408c632ef2689ca3777b112f9421306ccf4f8c84d7c5c9f83f8"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.3.2"
   build_daemon:
@@ -118,23 +126,23 @@ packages:
     description:
       name: build_daemon
       sha256: "79e05eaf15a48d7230b053a4363b8eaac0cc234bbd0134c3229455481f55cbc6"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "4.1.5"
   build_runner:
     dependency: "direct dev"
     description:
       name: build_runner
-      sha256: "5367e521935b102bdf1e735d2aab461e36b2edca6517662d088dd04cc39f8d16"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "90363d438bd9f84a4d5bbb83352251f57d2d9d771bc95a44e6a33fe25fa52774"
+      url: "https://pub.dev"
     source: hosted
-    version: "2.15.1"
+    version: "2.16.0"
   built_collection:
     dependency: transitive
     description:
       name: built_collection
       sha256: "376e3dd27b51ea877c28d525560790aee2e6fbb5f20e2f85d5081027d94e2100"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "5.1.1"
   built_value:
@@ -142,7 +150,7 @@ packages:
     description:
       name: built_value
       sha256: "31b24be6615ec7fcf70b3aa5a7469fe35826485e639a16dd7eb83ba30e4cc6a8"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "8.12.7"
   characters:
@@ -150,7 +158,7 @@ packages:
     description:
       name: characters
       sha256: faf38497bda5ead2a8c7615f4f7939df04333478bf32e4173fcb06d428b5716b
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
   checked_yaml:
@@ -158,7 +166,7 @@ packages:
     description:
       name: checked_yaml
       sha256: "959525d3162f249993882720d52b7e0c833978df229be20702b33d48d91de70f"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.0.4"
   cli_config:
@@ -166,31 +174,31 @@ packages:
     description:
       name: cli_config
       sha256: ac20a183a07002b700f0c25e61b7ee46b23c309d76ab7b7640a028f18e4d99ec
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
   clock:
     dependency: transitive
     description:
       name: clock
-      sha256: fddb70d9b5277016c77a80201021d40a2247104d9f4aa7bab7157b7e3f05b84b
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: e51d50bca3217c9a9fa2b41a30e4a38971133f5f9ec7a3d57bae095007f1d28e
+      url: "https://pub.dev"
     source: hosted
-    version: "1.1.2"
+    version: "1.1.3"
   code_assets:
     dependency: transitive
     description:
       name: code_assets
-      sha256: bf394f466ba9205f1812a0433b392d6af280f155f56651eda7c18cc32ed493b8
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: cfd4f5f575a49c5f10ca856e9846073f1e6c3ee94912377eea5f6cefc5272941
+      url: "https://pub.dev"
     source: hosted
-    version: "1.2.1"
+    version: "2.0.0"
   collection:
     dependency: transitive
     description:
       name: collection
       sha256: "2f5709ae4d3d59dd8f7cd309b4e023046b57d8a6c82130785d2b0e5868084e76"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
   convert:
@@ -198,7 +206,7 @@ packages:
     description:
       name: convert
       sha256: b30acd5944035672bc15c6b7a8b47d773e41e2f17de064350988c5d02adb1c68
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
   coverage:
@@ -206,23 +214,23 @@ packages:
     description:
       name: coverage
       sha256: "956a3de0725ca232ad353565a8290d3357592bf4250f6f298a185e2d949c5d3d"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.15.1"
   cross_file:
     dependency: transitive
     description:
       name: cross_file
-      sha256: "92c9c43c383bfa1c32079d3bc492d55d6d4318044b7b47edaff8971cbb555c51"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: f141ea4f277af142a0356955707f6556f37b03947d39d55585981a06ca437bd6
+      url: "https://pub.dev"
     source: hosted
-    version: "0.3.5+4"
+    version: "0.3.5+5"
   crypto:
     dependency: transitive
     description:
       name: crypto
       sha256: c8ea0233063ba03258fbcf2ca4d6dadfefe14f02fab57702265467a19f27fadf
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
   cupertino_icons:
@@ -230,23 +238,23 @@ packages:
     description:
       name: cupertino_icons
       sha256: "41e005c33bd814be4d3096aff55b1908d419fde52ca656c8c47719ec745873cd"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
   dart_style:
     dependency: transitive
     description:
       name: dart_style
-      sha256: "29f7ecc274a86d32920b1d9cfc7502fa87220da41ec60b55f329559d5732e2b2"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "82ade9fc4273f29ed673e33166944465225b4f7fc5d4aaef48605cc751c18fc1"
+      url: "https://pub.dev"
     source: hosted
-    version: "3.1.7"
+    version: "3.1.13"
   dbus:
     dependency: transitive
     description:
       name: dbus
       sha256: a48d5da28e89bd02196e80d81ed8d7954923d00a0f4a68cc20b575038f023383
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.7.15"
   diff_match_patch:
@@ -254,7 +262,7 @@ packages:
     description:
       name: diff_match_patch
       sha256: "2efc9e6e8f449d0abe15be240e2c2a3bcd977c8d126cfd70598aee60af35c0a4"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.4.1"
   dispose_scope:
@@ -262,7 +270,7 @@ packages:
     description:
       name: dispose_scope
       sha256: "48ec38ca2631c53c4f8fa96b294c801e55c335db5e3fb9f82cede150cfe5a2af"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
   equatable:
@@ -270,7 +278,7 @@ packages:
     description:
       name: equatable
       sha256: "3bce007a596ff8b3119c45d68aaef631272537c03d30e5d4534dd24bf4c5eaa2"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
   fake_async:
@@ -278,7 +286,7 @@ packages:
     description:
       name: fake_async
       sha256: "5368f224a74523e8d2e7399ea1638b37aecfca824a3cc4dfdf77bf1fa905ac44"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.3.3"
   ffi:
@@ -286,7 +294,7 @@ packages:
     description:
       name: ffi
       sha256: "6d7fd89431262d8f3125e81b50d3847a091d846eafcd4fdb88dd06f36d705a45"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
   ffi_leak_tracker:
@@ -294,7 +302,7 @@ packages:
     description:
       name: ffi_leak_tracker
       sha256: "4093d4ef9ca06ffe2786e73bfb25e22aa92112b9bb4ec941f11e3e6b61489a97"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.1.2"
   file:
@@ -302,55 +310,55 @@ packages:
     description:
       name: file
       sha256: a3b4f84adafef897088c160faf7dfffb7696046cb13ae90b508c2cbc95d3b8d4
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
   file_picker:
     dependency: "direct main"
     description:
       name: file_picker
-      sha256: afbaa8015d9efabd224f41084ed9fdeddfa65389ebd7cd3a9eb1476aca66b46d
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: b7acb5d123cb398f6b4a8a38e43777545254f8fc1fabef3ee11cbbb56aece9c8
+      url: "https://pub.dev"
     source: hosted
-    version: "12.0.0"
+    version: "12.1.2"
   file_picker_darwin:
     dependency: transitive
     description:
       name: file_picker_darwin
-      sha256: "5d87d156c1d63920447a662b7117d3498c67e3444a44d2cb01ed955d6efa62ef"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "6e7cae501d48fd57a27911608db718ebd898e6ccf934bf09e33a8c0d0365bec0"
+      url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.4"
   file_picker_linux:
     dependency: transitive
     description:
       name: file_picker_linux
-      sha256: "93d3f62f97c657053e7b184fe0f5e22347d85067c053640a30b1ac8ad7844e3b"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: f0f01ed42967b7355f6f25c8b121ea531d1948e2a9b4b44f4b4de8489d7b04ae
+      url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.2"
   file_picker_platform_interface:
     dependency: transitive
     description:
       name: file_picker_platform_interface
-      sha256: "9e7a7e01e179929241f0afeb2c8c69ac95e29e17c0abea36ed193881c6bef90c"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "11ef1b5c14d9186b4788cc273dd8d5cb81bca847145060991a28234ff7916fc1"
+      url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "3.2.0"
   file_picker_web:
     dependency: transitive
     description:
       name: file_picker_web
-      sha256: f1af38b3c91fafe0ca97f659b5c6818a057473ef09bb8b722f9f3f5364aa7eed
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: df472142f63c4557fdfbb375c81454ca1c251491069eefcdc6a866bc12f8750b
+      url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.3"
   fixnum:
     dependency: transitive
     description:
       name: fixnum
       sha256: b6dc7065e46c974bc7c5f143080a6764ec7a4be6da1285ececdc37be96de53be
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
   flutter:
@@ -363,7 +371,7 @@ packages:
     description:
       name: flutter_bloc
       sha256: cf51747952201a455a1c840f8171d273be009b932c75093020f9af64f2123e38
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "9.1.1"
   flutter_lints:
@@ -371,7 +379,7 @@ packages:
     description:
       name: flutter_lints
       sha256: "3105dc8492f6183fb076ccf1f351ac3d60564bff92e20bfc4af9cc1651f4e7e1"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
   flutter_localizations:
@@ -384,7 +392,7 @@ packages:
     description:
       name: flutter_markdown_plus
       sha256: fce641d6c2106cc495de1cd603f97a4f9d615a97a64011928ded380dbdade935
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.12"
   flutter_plugin_android_lifecycle:
@@ -392,7 +400,7 @@ packages:
     description:
       name: flutter_plugin_android_lifecycle
       sha256: "3854fe5e3bff0b113c658f260b90c95dea17c92db0f2addeac2e343dd9969785"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.0.35"
   flutter_test:
@@ -405,7 +413,7 @@ packages:
     description:
       name: flutter_test_robots
       sha256: "3b00f2081148bde55190997c2772f934ad2f4529cbcfc4ccfa593f8ddc117a28"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.0.24"
   flutter_test_runners:
@@ -413,7 +421,7 @@ packages:
     description:
       name: flutter_test_runners
       sha256: cc575117ed66a79185a26995399d7048341517a1bd21188cb43753739627832d
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.0.4"
   flutter_web_plugins:
@@ -426,23 +434,23 @@ packages:
     description:
       name: follow_the_leader
       sha256: "2e4c4ebe6b3f1942b2385904b118ba8ba117fae0b30c8c453be0b64a271dd07a"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.5.2"
   freezed:
     dependency: "direct dev"
     description:
       name: freezed
-      sha256: f23ea33b3863f119b58ed1b586e881a46bd28715ddcc4dbc33104524e3434131
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "541a82723c84298f3ca46a6c2186935aa21ad529ad1f1423d67af18040494f51"
+      url: "https://pub.dev"
     source: hosted
-    version: "3.2.5"
+    version: "4.0.1"
   freezed_annotation:
     dependency: "direct main"
     description:
       name: freezed_annotation
       sha256: "7294967ff0a6d98638e7acb774aac3af2550777accd8149c90af5b014e6d44d8"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
   frontend_server_client:
@@ -450,23 +458,23 @@ packages:
     description:
       name: frontend_server_client
       sha256: f64a0333a82f30b0cca061bc3d143813a486dc086b574bfb233b7c1372427694
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "4.0.0"
   glob:
     dependency: transitive
     description:
       name: glob
-      sha256: c3f1ee72c96f8f78935e18aa8cecced9ab132419e8625dc187e1c2408efc20de
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "218aeb56050c714f62a3182775320dfa04602b55074873e24e31bbd39bda96fb"
+      url: "https://pub.dev"
     source: hosted
-    version: "2.1.3"
+    version: "2.2.0"
   go_router:
     dependency: "direct main"
     description:
       name: go_router
       sha256: d7a3576cb312649eaa51f2356450aed686085fb58fcdebda5b359aa951eef7ea
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "17.5.0"
   graphs:
@@ -474,23 +482,23 @@ packages:
     description:
       name: graphs
       sha256: "741bbf84165310a68ff28fe9e727332eef1407342fca52759cb21ad8177bb8d0"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
   hooks:
     dependency: transitive
     description:
       name: hooks
-      sha256: "9a62a50b50b769a737bc0a8ff381f333529df3ab746b2f6b02e83760231455ba"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: eaac480a35ec0814146c2c48d96aaa829e0e44a7662c88ae84c9edf4bc35651f
+      url: "https://pub.dev"
     source: hosted
-    version: "2.0.2"
+    version: "2.2.0"
   http:
     dependency: transitive
     description:
       name: http
       sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.6.0"
   http_multi_server:
@@ -498,7 +506,7 @@ packages:
     description:
       name: http_multi_server
       sha256: aa6199f908078bb1c5efb8d8638d4ae191aac11b311132c3ef48ce352fb52ef8
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.2.2"
   http_parser:
@@ -506,47 +514,47 @@ packages:
     description:
       name: http_parser
       sha256: "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
   idb_shim:
     dependency: "direct main"
     description:
       name: idb_shim
-      sha256: "48be1c95f06c4b059d0f5b9888dc5d7384e4a9e4d71824ae2deeb1e1546c6c07"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: e36a748165663a165e1f292e9d85af6e3aa087f6e2291d16f86b2035103b2950
+      url: "https://pub.dev"
     source: hosted
-    version: "2.9.2"
+    version: "2.9.8"
   image:
     dependency: transitive
     description:
       name: image
       sha256: "1976370a4df3091bb0f72409c187ad1f9132a818bc6b95ca59c0bae1c75c688e"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "4.9.2"
   intl:
     dependency: "direct main"
     description:
       name: intl
-      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "1ca20c894b1717686a2319b8548763d812bc0aabdac580420a44c5178c57a867"
+      url: "https://pub.dev"
     source: hosted
-    version: "0.20.2"
+    version: "0.20.3"
   io:
     dependency: transitive
     description:
       name: io
-      sha256: dfd5a80599cf0165756e3181807ed3e77daf6dd4137caaad72d0b7931597650b
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "2635216ca6a737e60de577ffa1a48a0bec76ca8a62917cfc1bb88c14c570646f"
+      url: "https://pub.dev"
     source: hosted
-    version: "1.0.5"
+    version: "1.1.0"
   jni:
     dependency: transitive
     description:
       name: jni
       sha256: f038e58b4dc2c9037f50e233175086337e0b305e356d28211bf55f21c504cbd3
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.3"
   jni_flutter:
@@ -554,7 +562,7 @@ packages:
     description:
       name: jni_flutter
       sha256: "7b717011ea40d04fd47c2731d3d1d36eb99eba3435c2753d62489e8c3c9991d5"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
   jni_util:
@@ -562,7 +570,7 @@ packages:
     description:
       name: jni_util
       sha256: "1ba86da04a5f2bf18fde2edb235587e70c5b0fc5bd4ba955f46b00942c3fc35f"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
   json_annotation:
@@ -570,7 +578,7 @@ packages:
     description:
       name: json_annotation
       sha256: "2a743920d81b7910627f68ee2c9ac1fc0bfee32b9fc3403587d7c6791ca12f80"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "4.12.0"
   json_serializable:
@@ -578,7 +586,7 @@ packages:
     description:
       name: json_serializable
       sha256: e45aefa0324f08c683caafbb94b72837aa6193c61822799c916e45f4a263113d
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "6.14.1"
   leak_tracker:
@@ -586,7 +594,7 @@ packages:
     description:
       name: leak_tracker
       sha256: "33e2e26bdd85a0112ec15400c8cbffea70d0f9c3407491f672a2fad47915e2de"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "11.0.2"
   leak_tracker_flutter_testing:
@@ -594,7 +602,7 @@ packages:
     description:
       name: leak_tracker_flutter_testing
       sha256: "1dbc140bb5a23c75ea9c4811222756104fbcd1a27173f0c34ca01e16bea473c1"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.0.10"
   leak_tracker_testing:
@@ -602,7 +610,7 @@ packages:
     description:
       name: leak_tracker_testing
       sha256: "8d5a2d49f4a66b49744b23b018848400d23e54caf9463f4eb20df3eb8acb2eb1"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
   linkify:
@@ -610,7 +618,7 @@ packages:
     description:
       name: linkify
       sha256: "4139ea77f4651ab9c315b577da2dd108d9aa0bd84b5d03d33323f1970c645832"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "5.0.0"
   lints:
@@ -618,7 +626,7 @@ packages:
     description:
       name: lints
       sha256: "12f842a479589fea194fe5c5a3095abc7be0c1f2ddfa9a0e76aed1dbd26a87df"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
   logging:
@@ -626,7 +634,7 @@ packages:
     description:
       name: logging
       sha256: c8245ada5f1717ed44271ed1c26b8ce85ca3228fd2ffdb75468ab01979309d61
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.3.0"
   markdown:
@@ -634,47 +642,47 @@ packages:
     description:
       name: markdown
       sha256: ee85086ad7698b42522c6ad42fe195f1b9898e4d974a1af4576c1a3a176cada9
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "7.3.1"
   matcher:
     dependency: transitive
     description:
       name: matcher
-      sha256: "12956d0ad8390bbcc63ca2e1469c0619946ccb52809807067a7020d57e647aa6"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "31bd099b47c10cd1aeb55146a2d46ce0277630ecef3f7dae54ad7873f36696cd"
+      url: "https://pub.dev"
     source: hosted
-    version: "0.12.18"
+    version: "0.12.20"
   material_color_utilities:
     dependency: transitive
     description:
       name: material_color_utilities
       sha256: "9c337007e82b1889149c82ed242ed1cb24a66044e30979c44912381e9be4c48b"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.13.0"
   meta:
     dependency: "direct main"
     description:
       name: meta
-      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "307249ce4ff29d58a18e97f6345f539382eb9c9c29ecda628900f31de0443dd9"
+      url: "https://pub.dev"
     source: hosted
-    version: "1.17.0"
+    version: "1.19.0"
   mime:
     dependency: transitive
     description:
       name: mime
-      sha256: "41a20518f0cb1256669420fdba0cd90d21561e560ac240f26ef8322e45bb7ed6"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: bd47de35f07e27267e69c8c8b22edf9473bfee170a60d60fcc93730c5144b7f6
+      url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
+    version: "2.1.0"
   mocktail:
     dependency: transitive
     description:
       name: mocktail
       sha256: "5e1bf53cc7baa8062a33b84424deb61513858ea05c601b8509e683815b5914aa"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
   nested:
@@ -682,7 +690,7 @@ packages:
     description:
       name: nested
       sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
   node_preamble:
@@ -690,23 +698,23 @@ packages:
     description:
       name: node_preamble
       sha256: "6e7eac89047ab8a8d26cf16127b5ed26de65209847630400f9aefd7cd5c730db"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.0.2"
   objective_c:
     dependency: transitive
     description:
       name: objective_c
-      sha256: b7fb95a6d9a4f009edd63dc5ac69f07420b23a16161c6dd8660290b59c602e8e
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: ad56fd53a78ff6b1472fa59ff2a4e8b8ccabafc586fc263a1dfad0b99b5553e3
+      url: "https://pub.dev"
     source: hosted
-    version: "9.5.0"
+    version: "9.6.0"
   overlord:
     dependency: transitive
     description:
       name: overlord
       sha256: "532f5685ac09ee805d97ce89794a4eeda41672c32955b4a835bdfce93e720a05"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.4.2"
   package_config:
@@ -714,7 +722,7 @@ packages:
     description:
       name: package_config
       sha256: f096c55ebb7deb7e384101542bfba8c52696c1b56fca2eb62827989ef2353bbc
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
   path:
@@ -722,7 +730,7 @@ packages:
     description:
       name: path
       sha256: "75cca69d1490965be98c73ceaea117e8a04dd21217b37b292c9ddbec0d955bc5"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
   path_parsing:
@@ -730,7 +738,7 @@ packages:
     description:
       name: path_parsing
       sha256: "883402936929eac138ee0a45da5b0f2c80f89913e6dc3bf77eb65b84b409c6ca"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
   path_provider:
@@ -738,7 +746,7 @@ packages:
     description:
       name: path_provider
       sha256: a7f4874f987173da295a61c181b8ee71dab59b332a486b391babf26a1b884825
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.1.6"
   path_provider_android:
@@ -746,7 +754,7 @@ packages:
     description:
       name: path_provider_android
       sha256: "69cbd515a62b94d32a7944f086b2f82b4ac40a1d45bebfc00813a430ab2dabcd"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.3.1"
   path_provider_foundation:
@@ -754,7 +762,7 @@ packages:
     description:
       name: path_provider_foundation
       sha256: "2a376b7d6392d80cd3705782d2caa734ca4727776db0b6ec36ef3f1855197699"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.6.0"
   path_provider_linux:
@@ -762,7 +770,7 @@ packages:
     description:
       name: path_provider_linux
       sha256: "58c2005f147315b11e9b4a7bc889cd5203e250cba8e3f012dae259b4972b5c16"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.2.2"
   path_provider_platform_interface:
@@ -770,7 +778,7 @@ packages:
     description:
       name: path_provider_platform_interface
       sha256: "484838772624c3a4b94f1e44a3e19897fee738f2d5c4ce448443b0417f7c9dda"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.1.3"
   path_provider_windows:
@@ -778,7 +786,7 @@ packages:
     description:
       name: path_provider_windows
       sha256: bd6f00dbd873bfb70d0761682da2b3a2c2fccc2b9e84c495821639601d81afe7
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.3.0"
   patrol:
@@ -786,7 +794,7 @@ packages:
     description:
       name: patrol
       sha256: "743678f959a4878807efec59d19f8ebd65cc3d6953fdecce6562c987963f30a8"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "4.9.0"
   patrol_finders:
@@ -794,7 +802,7 @@ packages:
     description:
       name: patrol_finders
       sha256: "8608cdacaab90a3b00ecd7b09df11f13a62b01dea13c211b9f13fd86854e103a"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.6.0"
   patrol_log:
@@ -802,23 +810,23 @@ packages:
     description:
       name: patrol_log
       sha256: "3d91c93e8d0ed19cb12d4b27aa24eca7294e0a48d9d8445505c9775feb5fde2d"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.10.1"
   pdf:
     dependency: "direct main"
     description:
       name: pdf
-      sha256: e47a275b267873d5944ad5f5ff0dcc7ac2e36c02b3046a0ffac9b72fd362c44b
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "517df47af468734a23c8b513c0c6a8a62357403ab1b8ab7fad1606576a9dbdd0"
+      url: "https://pub.dev"
     source: hosted
-    version: "3.12.0"
+    version: "3.13.0"
   pdf_widget_wrapper:
     dependency: transitive
     description:
       name: pdf_widget_wrapper
       sha256: c930860d987213a3d58c7ec3b7ecf8085c3897f773e8dc23da9cae60a5d6d0f5
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.4"
   petitparser:
@@ -826,7 +834,7 @@ packages:
     description:
       name: petitparser
       sha256: "91bd59303e9f769f108f8df05e371341b15d59e995e6806aefab827b58336675"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
   platform:
@@ -834,7 +842,7 @@ packages:
     description:
       name: platform
       sha256: "5d6b1b0036a5f331ebc77c850ebc8506cbc1e9416c27e59b439f917a902a4984"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.1.6"
   plugin_platform_interface:
@@ -842,87 +850,87 @@ packages:
     description:
       name: plugin_platform_interface
       sha256: "4820fbfdb9478b1ebae27888254d445073732dae3d6ea81f0b7e06d5dedc3f02"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
   pool:
     dependency: transitive
     description:
       name: pool
-      sha256: "978783255c543aa3586a1b3c21f6e9d720eb315376a915872c61ef8b5c20177d"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "4177f68c237ea2128d1bee66ac17b2ce05ba3dbaafcbdd54c5d40a39d0b6b11c"
+      url: "https://pub.dev"
     source: hosted
-    version: "1.5.2"
+    version: "1.5.3"
   posix:
     dependency: transitive
     description:
       name: posix
       sha256: bc1bad54ad2b735816e31f8d4600cfde6c7839975085ddfbca48b6c9f7c4044e
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "6.5.2"
   printing:
     dependency: "direct main"
     description:
       name: printing
-      sha256: "689170c9ddb1bda85826466ba80378aa8993486d3c959a71cd7d2d80cb606692"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: f6cd14c768c1352dd37a958a3ee351aa9ce305b398218d3acd86389d5f7ecad1
+      url: "https://pub.dev"
     source: hosted
-    version: "5.14.3"
+    version: "5.15.0"
   provider:
     dependency: transitive
     description:
       name: provider
       sha256: "4e82183fa20e5ca25703ead7e05de9e4cceed1fbd1eadc1ac3cb6f565a09f272"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "6.1.5+1"
   pub_semver:
     dependency: transitive
     description:
       name: pub_semver
-      sha256: "5bfcf68ca79ef689f8990d1160781b4bad40a3bd5e5218ad4076ddb7f4081585"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "261236774e8b1d69cfc6b9eabbc96c40f25e7a2d6b171f3385d4f65d5734fb24"
+      url: "https://pub.dev"
     source: hosted
-    version: "2.2.0"
+    version: "2.2.1"
   pubspec_parse:
     dependency: transitive
     description:
       name: pubspec_parse
-      sha256: "0560ba233314abbed0a48a2956f7f022cce7c3e1e73df540277da7544cad4082"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: c38b81cbf34450b67e0265d73433569d12e34782e30ed769c9cc99c9d5f2e796
+      url: "https://pub.dev"
     source: hosted
-    version: "1.5.0"
+    version: "1.6.0"
   qr:
     dependency: transitive
     description:
       name: qr
       sha256: "5a1d2586170e172b8a8c8470bbbffd5eb0cd38a66c0d77155ea138d3af3a4445"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
   record_use:
     dependency: transitive
     description:
       name: record_use
-      sha256: "2551bd8eecfe95d14ae75f6021ad0248be5c27f138c2ec12fcb52b500b3ba1ed"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "1cb8564af8d43b464294411db9217f5ec04891c6f22ee2c32d73ae05e88a6bd2"
+      url: "https://pub.dev"
     source: hosted
-    version: "0.6.0"
+    version: "1.1.1"
   sembast:
     dependency: transitive
     description:
       name: sembast
-      sha256: "93654267ad36e72ef130ffc05970287f42955b40f07d0efd264e64f7215fa1de"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: a58b26925e23071cf0f4754d8449aabe829e9a9930a872fb18e6ae4c2c88e025
+      url: "https://pub.dev"
     source: hosted
-    version: "3.8.7"
+    version: "3.8.9+1"
   share_plus:
     dependency: "direct main"
     description:
       name: share_plus
       sha256: "34f00f9becd2743c1fb05363d624f9f70d37f7ccdcdda47450bc0b8c9d327b8c"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "13.3.0"
   share_plus_platform_interface:
@@ -930,7 +938,7 @@ packages:
     description:
       name: share_plus_platform_interface
       sha256: "365ef7379fc22507256adda3385152942ffce08935452bc972c2e52a0bebae41"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "7.2.0"
   shared_preferences:
@@ -938,31 +946,31 @@ packages:
     description:
       name: shared_preferences
       sha256: c3025c5534b01739267eb7d76959bbc25a6d10f6988e1c2a3036940133dd10bf
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.5.5"
   shared_preferences_android:
     dependency: transitive
     description:
       name: shared_preferences_android
-      sha256: e8d4762b1e2e8578fc4d0fd548cebf24afd24f49719c08974df92834565e2c53
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "1e12aafe408aa50da80edfd679a2a6bf63ba7ab37c7fa98286da459a757b3399"
+      url: "https://pub.dev"
     source: hosted
-    version: "2.4.23"
+    version: "2.4.28"
   shared_preferences_foundation:
     dependency: transitive
     description:
       name: shared_preferences_foundation
-      sha256: "4e7eaffc2b17ba398759f1151415869a34771ba11ebbccd1b0145472a619a64f"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "2ec3934efa51e46117f23031cc141b8fc878e8525b94ec1ea4f7f586cf1b47ea"
+      url: "https://pub.dev"
     source: hosted
-    version: "2.5.6"
+    version: "2.5.7"
   shared_preferences_linux:
     dependency: transitive
     description:
       name: shared_preferences_linux
       sha256: "580abfd40f415611503cae30adf626e6656dfb2f0cee8f465ece7b6defb40f2f"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
   shared_preferences_platform_interface:
@@ -970,7 +978,7 @@ packages:
     description:
       name: shared_preferences_platform_interface
       sha256: "649dc798a33931919ea356c4305c2d1f81619ea6e92244070b520187b5140ef9"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.4.2"
   shared_preferences_web:
@@ -978,7 +986,7 @@ packages:
     description:
       name: shared_preferences_web
       sha256: c49bd060261c9a3f0ff445892695d6212ff603ef3115edbb448509d407600019
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.4.3"
   shared_preferences_windows:
@@ -986,7 +994,7 @@ packages:
     description:
       name: shared_preferences_windows
       sha256: "94ef0f72b2d71bc3e700e025db3710911bd51a71cefb65cc609dd0d9a982e3c1"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
   shelf:
@@ -994,7 +1002,7 @@ packages:
     description:
       name: shelf
       sha256: e7dd780a7ffb623c57850b33f43309312fc863fb6aa3d276a754bb299839ef12
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.4.2"
   shelf_packages_handler:
@@ -1002,7 +1010,7 @@ packages:
     description:
       name: shelf_packages_handler
       sha256: "89f967eca29607c933ba9571d838be31d67f53f6e4ee15147d5dc2934fee1b1e"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
   shelf_static:
@@ -1010,7 +1018,7 @@ packages:
     description:
       name: shelf_static
       sha256: c87c3875f91262785dade62d135760c2c69cb217ac759485334c5857ad89f6e3
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.1.3"
   shelf_web_socket:
@@ -1018,7 +1026,7 @@ packages:
     description:
       name: shelf_web_socket
       sha256: "3632775c8e90d6c9712f883e633716432a27758216dfb61bd86a8321c0580925"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
   sky_engine:
@@ -1031,7 +1039,7 @@ packages:
     description:
       name: source_gen
       sha256: a603f1fb984a7391ae5978d1b92bfaaa08b350dca5c825256f925818f7943bf5
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "4.2.4"
   source_helper:
@@ -1039,7 +1047,7 @@ packages:
     description:
       name: source_helper
       sha256: "5e6f216fdf6376c9f3852381ae037499797a3385377d388b011dac98d303c67c"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.3.13"
   source_map_stack_trace:
@@ -1047,7 +1055,7 @@ packages:
     description:
       name: source_map_stack_trace
       sha256: c0713a43e323c3302c2abe2a1cc89aa057a387101ebd280371d6a6c9fa68516b
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
   source_maps:
@@ -1055,7 +1063,7 @@ packages:
     description:
       name: source_maps
       sha256: "14c2945847669b44089bb1222f66873d7ff7103c58911917f2a63c5a62327898"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.10.14"
   source_span:
@@ -1063,39 +1071,39 @@ packages:
     description:
       name: source_span
       sha256: "56a02f1f4cd1a2d96303c0144c93bd6d909eea6bee6bf5a0e0b685edbd4c47ab"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.10.2"
   stack_trace:
     dependency: transitive
     description:
       name: stack_trace
-      sha256: "8b27215b45d22309b5cddda1aa2b19bdfec9df0e765f2de506401c071d38d1b1"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "277654b3034d17ac6f9f1cb5595db011b1d5d41e8806866db28e0abaa101c490"
+      url: "https://pub.dev"
     source: hosted
-    version: "1.12.1"
+    version: "1.12.2"
   stream_channel:
     dependency: transitive
     description:
       name: stream_channel
       sha256: "969e04c80b8bcdf826f8f16579c7b14d780458bd97f56d107d3950fdbeef059d"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.1.4"
   stream_transform:
     dependency: transitive
     description:
       name: stream_transform
-      sha256: ad47125e588cfd37a9a7f86c7d6356dde8dfe89d071d293f80ca9e9273a33871
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: a00e5f18bffc764f923e7dec1038527f7fe7a1791361a7117f0358193f13d53a
+      url: "https://pub.dev"
     source: hosted
-    version: "2.1.1"
+    version: "2.1.2"
   string_scanner:
     dependency: transitive
     description:
       name: string_scanner
       sha256: "921cd31725b72fe181906c6a94d987c78e3b98c2e205b397ea399d4054872b43"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
   super_editor:
@@ -1103,7 +1111,7 @@ packages:
     description:
       name: super_editor
       sha256: "33ca2f4194cb5fa350bc6e6d2de73359fb42a6321fd4412d12a754e6b0cacbee"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.3.0-dev.39"
   super_editor_markdown:
@@ -1111,7 +1119,7 @@ packages:
     description:
       name: super_editor_markdown
       sha256: "60975d99d82a81589366400577e647a23fcfa31e1722f2942e9889b207b140e9"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.2.2"
   super_keyboard:
@@ -1119,7 +1127,7 @@ packages:
     description:
       name: super_keyboard
       sha256: "47dfacfd617f7b704c3b9cc786930ced3b6e8698cb5ffd3b4a0cb705d42f679a"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
   super_text_layout:
@@ -1127,55 +1135,55 @@ packages:
     description:
       name: super_text_layout
       sha256: "203409387b44c85e1d0a8e365c8a8791199b99440411f221ad02fa9fb07530b1"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "0.1.21"
   synchronized:
     dependency: transitive
     description:
       name: synchronized
-      sha256: "63896c27e81b28f8cb4e69ead0d3e8f03f1d1e5fc531a3e579cabed6a2c7c9e5"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "3a7b5d17422dd0f8d5c6c14feaa5a1c65638b9455f871a96f08437562c046931"
+      url: "https://pub.dev"
     source: hosted
-    version: "3.4.0+1"
+    version: "3.4.1+2"
   term_glyph:
     dependency: transitive
     description:
       name: term_glyph
       sha256: "7f554798625ea768a7518313e58f83891c7f5024f88e46e7182a4558850a4b8e"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.2.2"
   test:
     dependency: transitive
     description:
       name: test
-      sha256: "54c516bbb7cee2754d327ad4fca637f78abfc3cbcc5ace83b3eda117e42cd71a"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: ca578dc12bb8b2f40b67b7d3bd2fac4f31c01a6ff7130a14e2597b919934507f
+      url: "https://pub.dev"
     source: hosted
-    version: "1.29.0"
+    version: "1.31.1"
   test_api:
     dependency: transitive
     description:
       name: test_api
-      sha256: "93167629bfc610f71560ab9312acdda4959de4df6fac7492c89ff0d3886f6636"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "2a122cbe059f8b610d3a5415f42e255b6c17b1f21eee1d960f31080237fb4f11"
+      url: "https://pub.dev"
     source: hosted
-    version: "0.7.9"
+    version: "0.7.12"
   test_core:
     dependency: transitive
     description:
       name: test_core
-      sha256: "394f07d21f0f2255ec9e3989f21e54d3c7dc0e6e9dbce160e5a9c1a6be0e2943"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: d2e98ec12998368dc59ddd47ab709f2cd55acd6b66dc7db764455a44082f4bc5
+      url: "https://pub.dev"
     source: hosted
-    version: "0.6.15"
+    version: "0.6.18"
   typed_data:
     dependency: transitive
     description:
       name: typed_data
       sha256: f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
   url_launcher:
@@ -1183,47 +1191,47 @@ packages:
     description:
       name: url_launcher
       sha256: f6a7e5c4835bb4e3026a04793a4199ca2d14c739ec378fdfe23fc8075d0439f8
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "6.3.2"
   url_launcher_android:
     dependency: transitive
     description:
       name: url_launcher_android
-      sha256: "17bc677f0b301615530dd1d67e0a9828cafa2d0b6b6eae4cd3679b7eac4a273c"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "611e87fb320b70d1dd721dc46af89c98aceccea9b31fde49e084591414e0c610"
+      url: "https://pub.dev"
     source: hosted
-    version: "6.3.30"
+    version: "6.3.33"
   url_launcher_ios:
     dependency: transitive
     description:
       name: url_launcher_ios
-      sha256: "580fe5dfb51671ae38191d316e027f6b76272b026370708c2d898799750a02b0"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "8faa1aab294f1ab4040b43660c887b0418d5fa4f0cffef76a484e6aa1092eb4a"
+      url: "https://pub.dev"
     source: hosted
-    version: "6.4.1"
+    version: "6.4.2"
   url_launcher_linux:
     dependency: transitive
     description:
       name: url_launcher_linux
-      sha256: d5e14138b3bc193a0f63c10a53c94b91d399df0512b1f29b94a043db7482384a
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "10f86fef4c2c43563fa6c211ff9cf757adf4d3ab762c56bd430664a947d70cd0"
+      url: "https://pub.dev"
     source: hosted
-    version: "3.2.2"
+    version: "3.2.3"
   url_launcher_macos:
     dependency: transitive
     description:
       name: url_launcher_macos
-      sha256: "368adf46f71ad3c21b8f06614adb38346f193f3a59ba8fe9a2fd74133070ba18"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "5e835a3b869c2d70325349c81c5a45c28e20791265b67b2669da6b08c5cd5201"
+      url: "https://pub.dev"
     source: hosted
-    version: "3.2.5"
+    version: "3.2.6"
   url_launcher_platform_interface:
     dependency: transitive
     description:
       name: url_launcher_platform_interface
       sha256: "552f8a1e663569be95a8190206a38187b531910283c3e982193e4f2733f01029"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
   url_launcher_web:
@@ -1231,39 +1239,39 @@ packages:
     description:
       name: url_launcher_web
       sha256: "85c81589622fbc87c1c683aaea164d3604a7777495a79d91e39ffcdec39ddb34"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "2.4.3"
   url_launcher_windows:
     dependency: transitive
     description:
       name: url_launcher_windows
-      sha256: "712c70ab1b99744ff066053cbe3e80c73332b38d46e5e945c98689b2e66fc15f"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "6c5ad3f22cd4c38e089b81963b3cd7bb83b111b2df5dce008bb066162f42e429"
+      url: "https://pub.dev"
     source: hosted
-    version: "3.1.5"
+    version: "3.1.6"
   uuid:
     dependency: "direct main"
     description:
       name: uuid
       sha256: "9b129329f58692f6e6578329498a8fe9fbe98f090beb764ffbb8ee2eadd01dcd"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "4.6.0"
   vector_math:
     dependency: transitive
     description:
       name: vector_math
-      sha256: d530bd74fea330e6e364cda7a85019c434070188383e1cd8d9777ee586914c5b
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: f36f9f3be64c6198714492bb455c11056e33e2f85d9a0b676a48301e44fdcf47
+      url: "https://pub.dev"
     source: hosted
-    version: "2.2.0"
+    version: "2.4.2"
   vm_service:
     dependency: transitive
     description:
       name: vm_service
       sha256: "5f37239c4851efcef929cea7824e76df7f2f0970aef85d66bbc430afa40e72f0"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "15.3.0"
   watcher:
@@ -1271,7 +1279,7 @@ packages:
     description:
       name: watcher
       sha256: "1398c9f081a753f9226febe8900fce8f7d0a67163334e1c94a2438339d79d635"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
   web:
@@ -1279,7 +1287,7 @@ packages:
     description:
       name: web
       sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
   web_socket:
@@ -1287,7 +1295,7 @@ packages:
     description:
       name: web_socket
       sha256: "34d64019aa8e36bf9842ac014bb5d2f5586ca73df5e4d9bf5c936975cae6982c"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
   web_socket_channel:
@@ -1295,7 +1303,7 @@ packages:
     description:
       name: web_socket_channel
       sha256: d645757fb0f4773d602444000a8131ff5d48c9e47adfe9772652dd1a4f2d45c8
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "3.0.3"
   webkit_inspection_protocol:
@@ -1303,7 +1311,7 @@ packages:
     description:
       name: webkit_inspection_protocol
       sha256: "87d3f2333bb240704cd3f1c6b5b7acd8a10e7f0bc28c28dcf14e782014f4a572"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
   win32:
@@ -1311,41 +1319,41 @@ packages:
     description:
       name: win32
       sha256: a0b93865d5644f11cf6a8c3f6db909f1ec168958b5805f6cc684adea957cd63d
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "6.4.0"
   windows_file_picker:
     dependency: transitive
     description:
       name: windows_file_picker
-      sha256: "72cf23466e146f2c0f19e1d78be97ff6409dc15b0c090f8eb284f94f4a33de26"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "225f58e64c15c2d7b34fb8faf3ca188831967f26b5a723d7c3a7969e41c9b5a5"
+      url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.1.0"
   xdg_directories:
     dependency: transitive
     description:
       name: xdg_directories
       sha256: "7a3f37b05d989967cdddcbb571f1ea834867ae2faa29725fd085180e0883aa15"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
   xml:
     dependency: transitive
     description:
       name: xml
-      sha256: "971043b3a0d3da28727e40ed3e0b5d18b742fa5a68665cca88e74b7876d5e025"
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: "67f0aff7be013d107995e9b75bf4e7f2c3ef2dfdb2c8e68024bba0a7fd5756a4"
+      url: "https://pub.dev"
     source: hosted
-    version: "6.6.1"
+    version: "7.0.1"
   yaml:
     dependency: transitive
     description:
       name: yaml
-      sha256: b9da305ac7c39faa3f030eccd175340f968459dae4af175130b3fc47e40d76ce
-      url: "https://artifactory.gbm.lan/artifactory/api/pub/pub_virtual/"
+      sha256: f67cdd8e07d3c6329146aaef1ba043542b3134c12489f553ca9a7435d1068aea
+      url: "https://pub.dev"
     source: hosted
-    version: "3.1.3"
+    version: "3.1.4"
 sdks:
-  dart: ">=3.11.0 <4.0.0"
-  flutter: ">=3.38.4"
+  dart: ">=3.13.0 <4.0.0"
+  flutter: ">=3.44.0"
