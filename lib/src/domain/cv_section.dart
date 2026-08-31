@@ -3,13 +3,15 @@
 /// See ticket 01 for field-level schema and ticket 03 for wire format.
 library;
 
-import 'package:meta/meta.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'asset.dart';
 import 'calendar_date.dart';
 import 'copy_with_sentinel.dart';
 import 'enums.dart';
 import 'year_month.dart';
+
+part 'cv_section.freezed.dart';
 
 // -------------------- Shared value types --------------------
 
@@ -44,90 +46,20 @@ class Link {
 
 // -------------------- Section data payloads --------------------
 
-@immutable
-class AnagraficaData {
-  final String nome;
-  final String cognome;
-  final CalendarDate? dataNascita;
-  final String? luogoNascita;
-  final String? nazionalita;
-  final Genere? genere;
-  final StatoCivile? statoCivile;
-  final String? codiceFiscale;
-  final AssetRef? foto;
-  final String? headline;
-
-  const AnagraficaData({
-    required this.nome,
-    required this.cognome,
-    this.dataNascita,
-    this.luogoNascita,
-    this.nazionalita,
-    this.genere,
-    this.statoCivile,
-    this.codiceFiscale,
-    this.foto,
-    this.headline,
-  });
-
-  AnagraficaData copyWith({
-    String? nome,
-    String? cognome,
-    Object? dataNascita = unset,
-    Object? luogoNascita = unset,
-    Object? nazionalita = unset,
-    Object? genere = unset,
-    Object? statoCivile = unset,
-    Object? codiceFiscale = unset,
-    Object? foto = unset,
-    Object? headline = unset,
-  }) => AnagraficaData(
-    nome: nome ?? this.nome,
-    cognome: cognome ?? this.cognome,
-    dataNascita: isUnset(dataNascita)
-        ? this.dataNascita
-        : dataNascita as CalendarDate?,
-    luogoNascita:
-        isUnset(luogoNascita) ? this.luogoNascita : luogoNascita as String?,
-    nazionalita:
-        isUnset(nazionalita) ? this.nazionalita : nazionalita as String?,
-    genere: isUnset(genere) ? this.genere : genere as Genere?,
-    statoCivile:
-        isUnset(statoCivile) ? this.statoCivile : statoCivile as StatoCivile?,
-    codiceFiscale: isUnset(codiceFiscale)
-        ? this.codiceFiscale
-        : codiceFiscale as String?,
-    foto: isUnset(foto) ? this.foto : foto as AssetRef?,
-    headline: isUnset(headline) ? this.headline : headline as String?,
-  );
-
-  @override
-  bool operator ==(Object other) =>
-      other is AnagraficaData &&
-      other.nome == nome &&
-      other.cognome == cognome &&
-      other.dataNascita == dataNascita &&
-      other.luogoNascita == luogoNascita &&
-      other.nazionalita == nazionalita &&
-      other.genere == genere &&
-      other.statoCivile == statoCivile &&
-      other.codiceFiscale == codiceFiscale &&
-      other.foto == foto &&
-      other.headline == headline;
-
-  @override
-  int get hashCode => Object.hash(
-    nome,
-    cognome,
-    dataNascita,
-    luogoNascita,
-    nazionalita,
-    genere,
-    statoCivile,
-    codiceFiscale,
-    foto,
-    headline,
-  );
+@freezed
+abstract class AnagraficaData with _$AnagraficaData {
+  const factory AnagraficaData({
+    required String nome,
+    required String cognome,
+    CalendarDate? dataNascita,
+    String? luogoNascita,
+    String? nazionalita,
+    Genere? genere,
+    StatoCivile? statoCivile,
+    String? codiceFiscale,
+    AssetRef? foto,
+    String? headline,
+  }) = _AnagraficaData;
 }
 
 @immutable
@@ -174,87 +106,20 @@ class ContattiData {
       Object.hash(email, telefono, citta, indirizzo, Object.hashAll(link));
 }
 
-@immutable
-class EsperienzaItem {
-  final String id;
-  final String ruolo;
-  final String azienda;
-  final String? luogo;
-  final ModalitaLavoro? modalita;
-  final TipoContratto? tipoContratto;
-  final YearMonth startDate;
-  final YearMonth? endDate;
-  final bool current;
-  final String? descrizione;
-
-  const EsperienzaItem({
-    required this.id,
-    required this.ruolo,
-    required this.azienda,
-    this.luogo,
-    this.modalita,
-    this.tipoContratto,
-    required this.startDate,
-    this.endDate,
-    this.current = false,
-    this.descrizione,
-  });
-
-  EsperienzaItem copyWith({
-    String? id,
-    String? ruolo,
-    String? azienda,
-    Object? luogo = unset,
-    Object? modalita = unset,
-    Object? tipoContratto = unset,
-    YearMonth? startDate,
-    Object? endDate = unset,
-    bool? current,
-    Object? descrizione = unset,
-  }) => EsperienzaItem(
-    id: id ?? this.id,
-    ruolo: ruolo ?? this.ruolo,
-    azienda: azienda ?? this.azienda,
-    luogo: isUnset(luogo) ? this.luogo : luogo as String?,
-    modalita:
-        isUnset(modalita) ? this.modalita : modalita as ModalitaLavoro?,
-    tipoContratto: isUnset(tipoContratto)
-        ? this.tipoContratto
-        : tipoContratto as TipoContratto?,
-    startDate: startDate ?? this.startDate,
-    endDate: isUnset(endDate) ? this.endDate : endDate as YearMonth?,
-    current: current ?? this.current,
-    descrizione:
-        isUnset(descrizione) ? this.descrizione : descrizione as String?,
-  );
-
-  @override
-  bool operator ==(Object other) =>
-      other is EsperienzaItem &&
-      other.id == id &&
-      other.ruolo == ruolo &&
-      other.azienda == azienda &&
-      other.luogo == luogo &&
-      other.modalita == modalita &&
-      other.tipoContratto == tipoContratto &&
-      other.startDate == startDate &&
-      other.endDate == endDate &&
-      other.current == current &&
-      other.descrizione == descrizione;
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    ruolo,
-    azienda,
-    luogo,
-    modalita,
-    tipoContratto,
-    startDate,
-    endDate,
-    current,
-    descrizione,
-  );
+@freezed
+abstract class EsperienzaItem with _$EsperienzaItem {
+  const factory EsperienzaItem({
+    required String id,
+    required String ruolo,
+    required String azienda,
+    String? luogo,
+    ModalitaLavoro? modalita,
+    TipoContratto? tipoContratto,
+    required YearMonth startDate,
+    YearMonth? endDate,
+    @Default(false) bool current,
+    String? descrizione,
+  }) = _EsperienzaItem;
 }
 
 @immutable
