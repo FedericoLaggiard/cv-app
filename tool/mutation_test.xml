@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Configurazione del mutation testing notturno (ticket 22).
+     Perimetro: solo lib/src/domain/ - logica pura, ben isolata.
+     Mutare i widget produce mutanti equivalenti a valanga senza aggiungere segnale.
+     La soglia e' sostituita in CI dal valore della variable MUTATION_THRESHOLD. -->
+<mutations version="1.2">
+  <files>
+    <file>lib/src/domain/*.dart</file>
+  </files>
+
+  <commands>
+    <!-- Un mutante nel dominio deve essere ucciso dai test del dominio.
+         Timeout generoso: un mutante puo' introdurre un ciclo lento. -->
+    <command group="test" expected-return="0" working-directory="." timeout="120">flutter test test/domain</command>
+  </commands>
+
+  <exclude>
+    <!-- Codice generato: mutarlo misura build_runner, non la nostra suite. -->
+    <file>lib/src/domain/*.freezed.dart</file>
+    <file>lib/src/domain/*.g.dart</file>
+
+    <!-- Commenti e direttive: nessun comportamento osservabile. -->
+    <token begin="//" end="\n"/>
+    <regex pattern="/[*].*?[*]/" dotAll="true"/>
+    <token begin="export &apos;" end="&apos;;"/>
+    <token begin="import &apos;" end="&apos;;"/>
+    <token begin="export &quot;" end="&quot;;"/>
+    <token begin="import &quot;" end="&quot;;"/>
+
+    <!-- ++/-- producono quasi solo falsi positivi; i loop mutati non terminano. -->
+    <regex pattern="\+\+"/>
+    <regex pattern="--"/>
+    <regex pattern="[\s]for[\s]*\(.*?\)[\s]*{" dotAll="true"/>
+    <regex pattern="[\s]while[\s]*\(.*?\)[\s]*{.*?}" dotAll="true"/>
+  </exclude>
+
+  <!-- SOGLIA: 0 = gate disattivato, come deve nascere prima del baseline.
+       Il workflow la sostituisce con vars.MUTATION_THRESHOLD quando esiste. -->
+  <threshold failure="0">
+    <rating over="95" name="A"/>
+    <rating over="80" name="B"/>
+    <rating over="60" name="C"/>
+    <rating over="40" name="D"/>
+    <rating over="20" name="E"/>
+    <rating over="0" name="F"/>
+  </threshold>
+</mutations>

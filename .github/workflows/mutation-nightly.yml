@@ -1,0 +1,163 @@
+# Gate notturno di mutation testing (ticket 22).
+#
+# Non blocca i merge: un check che gira solo di notte non puo' essere required
+# su una PR senza fermare ogni merge fino a mezzanotte. Se lo score scende sotto
+# MUTATION_THRESHOLD il job fallisce e GitHub manda la mail di workflow fallito.
+#
+# Perimetro e comando di test vivono in tool/mutation_test.xml.
+name: mutation-nightly
+
+on:
+  schedule:
+    # 02:00 UTC = 04:00 in Italia (ora legale), 03:00 (ora solare).
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Esegui anche se lib/src/domain non e' cambiato"
+        type: boolean
+        default: false
+      threshold:
+        description: "Soglia da usare per questo run (vuoto = vars.MUTATION_THRESHOLD)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-nightly
+  cancel-in-progress: false
+
+env:
+  PUB_HOSTED_URL: https://pub.dev
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    # ~660 mutanti x qualche secondo l'uno. 180 min e' il tetto, non l'attesa.
+    timeout-minutes: 180
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Se dominio, test del dominio e configurazione sono identici all'ultimo
+      # run verde, non c'e' niente di nuovo da misurare: il job esce in ~1 min.
+      # La cache scade dopo 7 giorni di mancato accesso, quindi al massimo si
+      # rimisura una volta a settimana anche a codice fermo.
+      - name: Impronta del perimetro
+        id: fingerprint
+        run: |
+          echo "key=mutation-v1-${{ hashFiles('lib/src/domain/**', 'test/domain/**', 'tool/mutation_test.xml') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Cerca un run verde con la stessa impronta
+        id: seen
+        uses: actions/cache/restore@v6
+        with:
+          path: .mutation-fingerprint
+          key: ${{ steps.fingerprint.outputs.key }}
+
+      - name: Decidi se eseguire
+        id: decide
+        run: |
+          if [ "${{ steps.seen.outputs.cache-hit }}" = "true" ] && [ "${{ inputs.force }}" != "true" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Perimetro invariato dall'ultimo run verde: salto." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: subosito/flutter-action@v2
+        if: steps.decide.outputs.run == 'true'
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+
+      - name: flutter pub get
+        if: steps.decide.outputs.run == 'true'
+        run: flutter pub get
+
+      - name: dart pub global activate mutation_test
+        if: steps.decide.outputs.run == 'true'
+        run: |
+          dart pub global activate mutation_test 1.8.0
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      # Suite di riferimento. Se e' rossa il mutation testing non significa
+      # nulla: ogni mutante risulterebbe "ucciso" da un fallimento preesistente.
+      # Il lcov serve a mutation_test per saltare le righe non coperte.
+      - name: Suite del dominio + coverage
+        if: steps.decide.outputs.run == 'true'
+        run: flutter test --coverage test/domain
+
+      # La soglia vive in <threshold failure="..."> e non ha un flag da CLI.
+      # Nasce a 0 nel file committato (gate spento finche' il baseline non c'e').
+      - name: Applica la soglia
+        if: steps.decide.outputs.run == 'true'
+        id: threshold
+        env:
+          OVERRIDE: ${{ inputs.threshold }}
+          CONFIGURED: ${{ vars.MUTATION_THRESHOLD }}
+        run: |
+          value="${OVERRIDE:-$CONFIGURED}"
+          value="${value:-0}"
+          sed -i "s|<threshold failure=\"[^\"]*\"|<threshold failure=\"$value\"|" tool/mutation_test.xml
+          echo "value=$value" >> "$GITHUB_OUTPUT"
+          if [ "$value" = "0" ]; then
+            echo "Soglia 0: run di baseline, il gate non fallisce." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Soglia attiva: $value%" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Mutation test
+        if: steps.decide.outputs.run == 'true'
+        id: mutation
+        run: |
+          mutation_test \
+            --coverage coverage/lcov.info \
+            --format md \
+            --output build/mutation \
+            tool/mutation_test.xml
+
+      # Lo score si legge anche quando il passo sopra e' fallito: e' proprio il
+      # caso in cui serve saperlo.
+      - name: Score nel riepilogo
+        if: always() && steps.decide.outputs.run == 'true'
+        run: |
+          report=$(find build/mutation -name '*.md' | head -1)
+          [ -n "$report" ] || { echo "Nessun report prodotto." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+          total=$(grep -oP '^\| Mutations\s*\|\s*\K[0-9]+' "$report" | head -1)
+          undetected=$(grep -oP '^\| Undetected\s*\|\s*\K[0-9]+' "$report" | head -1)
+          {
+            echo "## Mutation score"
+            if [ -n "$total" ] && [ -n "$undetected" ] && [ "$total" -gt 0 ]; then
+              echo "**$(awk "BEGIN{printf \"%.1f\", (($total-$undetected)/$total)*100}")%**  ($((total-undetected))/$total mutanti uccisi)"
+              echo ""
+              echo "Soglia applicata: ${{ steps.threshold.outputs.value }}%"
+            else
+              echo "Score non estraibile dal report; vedi l'artifact."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report come artifact
+        if: always() && steps.decide.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-report
+          path: build/mutation
+          retention-days: 30
+
+      # Solo su verde: l'impronta memorizzata significa "questo perimetro e'
+      # gia' stato promosso". Salvarla anche su rosso nasconderebbe il problema
+      # fino alla prossima modifica del dominio.
+      - name: Memorizza l'impronta
+        if: success() && steps.decide.outputs.run == 'true'
+        run: date -u +%FT%TZ > .mutation-fingerprint
+
+      - name: Salva l'impronta in cache
+        if: success() && steps.decide.outputs.run == 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .mutation-fingerprint
+          key: ${{ steps.fingerprint.outputs.key }}

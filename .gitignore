@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Mutation testing (ticket 22)
+/mutation-test-report/
+/.mutation-fingerprint
