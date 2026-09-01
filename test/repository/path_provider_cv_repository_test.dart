@@ -91,6 +91,20 @@ void main() {
       await expectLater(
           repo.delete('nope'), throwsA(isA<CvRepositoryNotFound>()));
     });
+
+    test('save() after delete() throws CvRepositoryNotFound and does not '
+        'resurrect the file', () async {
+      final fs = FakeFileSystemService();
+      final repo = _repo(fs);
+      final a = await repo.create(initialVariantName: 'A');
+      await repo.delete(a.id);
+
+      await expectLater(
+        repo.save(a),
+        throwsA(isA<CvRepositoryNotFound>()),
+      );
+      expect(fs.files, isEmpty);
+    });
   });
 
   group('bootstrap: recover from files on disk', () {

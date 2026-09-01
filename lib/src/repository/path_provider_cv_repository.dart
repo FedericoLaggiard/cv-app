@@ -237,7 +237,7 @@ class PathProviderCvRepository implements CvRepository {
     final gcd = garbageCollectAssets(doc);
     validateStructure(gcd);
     final stamped = gcd.copyWith(updatedAt: _now().toUtc());
-    await _persist(stamped);
+    await _persist(stamped, requireExisting: true);
   }
 
   @override
@@ -250,15 +250,29 @@ class PathProviderCvRepository implements CvRepository {
     _bump.add(null);
   }
 
-  Future<void> _persist(CvDocument doc) async {
+  /// [requireExisting] guards `save()`'s call: since the cache is only
+  /// updated synchronously (no await between checks), an id removed from
+  /// it by a concurrent [delete] while `_fs.write` is in flight is caught
+  /// by the post-write re-check below, which undoes the write instead of
+  /// silently resurrecting a just-deleted variant.
+  Future<void> _persist(CvDocument doc, {bool requireExisting = false}) async {
+    if (requireExisting && !_isKnown(doc.id)) {
+      throw CvRepositoryNotFound(doc.id);
+    }
     final bytes =
         Uint8List.fromList(utf8.encode(CvDocumentCodec.toJsonString(doc)));
     await _fs.write(doc.id, bytes);
+    if (requireExisting && !_isKnown(doc.id)) {
+      await _fs.delete(doc.id).catchError((_) {});
+      throw CvRepositoryNotFound(doc.id);
+    }
     _cache[doc.id] = doc;
     _corrupt.remove(doc.id);
     _corruptNames.remove(doc.id);
     _bump.add(null);
   }
+
+  bool _isKnown(String id) => _cache.containsKey(id) || _corrupt.contains(id);
 
   // ------------------------ import / export ------------------------
 
