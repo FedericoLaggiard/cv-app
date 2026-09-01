@@ -1,5 +1,9 @@
 # cv_app — Flutter app
 
+[![CI](https://github.com/FedericoLaggiard/cv-app/actions/workflows/ci.yml/badge.svg)](https://github.com/FedericoLaggiard/cv-app/actions/workflows/ci.yml)
+[![mutation-test](https://github.com/FedericoLaggiard/cv-app/actions/workflows/mutation-nightly.yml/badge.svg)](https://github.com/FedericoLaggiard/cv-app/actions/workflows/mutation-nightly.yml)
+[![coverage](https://codecov.io/gh/FedericoLaggiard/cv-app/branch/main/graph/badge.svg)](https://codecov.io/gh/FedericoLaggiard/cv-app)
+
 Implementazione dell'MVP descritto in [`docs/cv-app/map.md`](../docs/cv-app/map.md).
 
 ## Cosa c'è oggi

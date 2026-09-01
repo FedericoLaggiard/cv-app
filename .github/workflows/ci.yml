@@ -1,0 +1,54 @@
+# CI ad ogni push/PR (badge "CI"). Rispecchia il pre-commit locale
+# (make ci-fast) cosi' un fallimento qui non e' mai una sorpresa: e' un
+# controllo che sarebbe dovuto girare in locale e non e' girato.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PUB_HOSTED_URL: https://pub.dev
+
+jobs:
+  ci-fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - run: make check-registry
+
+      - run: make analyze
+
+      - name: Test + coverage
+        run: flutter test --coverage
+
+      - run: make complexity
+
+      # Tokenless su repo pubblico funziona ma con rate limit basso; il token
+      # (secret CODECOV_TOKEN, letto solo se presente) evita di sforarlo.
+      - name: Coverage → Codecov
+        if: always()
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          fail_ci_if_error: false
