@@ -72,6 +72,13 @@ class EditorLoadError extends EditorState {
   const EditorLoadError(this.message);
 }
 
+/// La variante aperta è stata eliminata altrove (ticket 23, user story 11 —
+/// caso raro multi-finestra su desktop). La UI reagisce tornando alla
+/// Libreria.
+class EditorDeleted extends EditorState {
+  const EditorDeleted();
+}
+
 class EditorReady extends EditorState {
   final CvDocument document;
   final SaveStatus saveStatus;
@@ -154,6 +161,12 @@ class _DocumentReceived extends EditorEvent {
 class _DocumentStreamErrored extends EditorEvent {
   final Object error;
   const _DocumentStreamErrored(this.error);
+}
+
+/// Il repo ha chiuso lo stream di `watch(id)`: la variante è stata
+/// eliminata (da qui o da un'altra finestra/tab).
+class _DocumentDeleted extends EditorEvent {
+  const _DocumentDeleted();
 }
 
 class VariantNameChanged extends EditorEvent {
@@ -244,6 +257,7 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
     on<EditorStarted>(_onStarted);
     on<_DocumentReceived>(_onDocumentReceived);
     on<_DocumentStreamErrored>(_onStreamErrored);
+    on<_DocumentDeleted>(_onDocumentDeleted);
     on<VariantNameChanged>(_onVariantNameChanged);
     on<SectionAtIndexReplaced>(_onSectionReplaced);
     on<SectionAdded>(_onSectionAdded);
@@ -262,7 +276,15 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
     _sub = _repo.watch(e.variantId).listen(
           (doc) => add(_DocumentReceived(doc)),
           onError: (Object err) => add(_DocumentStreamErrored(err)),
+          onDone: () => add(const _DocumentDeleted()),
         );
+  }
+
+  void _onDocumentDeleted(_DocumentDeleted e, Emitter<EditorState> emit) {
+    // Lo stream si chiude anche quando `watch()` non trova subito l'id
+    // (dopo l'errore "not found" già gestito da `_onStreamErrored`); qui
+    // ci interessa solo il caso "era aperto e ora è sparito".
+    if (state is EditorReady) emit(const EditorDeleted());
   }
 
   void _onDocumentReceived(_DocumentReceived e, Emitter<EditorState> emit) {

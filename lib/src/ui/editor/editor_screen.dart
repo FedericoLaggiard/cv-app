@@ -66,29 +66,40 @@ class _EditorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<EditorBloc, EditorState>(
-      builder: (context, state) {
-        return switch (state) {
-          EditorInitial() || EditorLoading() =>
-            const Scaffold(body: Center(child: CircularProgressIndicator())),
-          EditorLoadError(:final message) => Scaffold(
-              appBar: AppBar(
-                leading: BackButton(onPressed: onBack),
-                title: const Text('Editor'),
-              ),
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Text(
-                    'Errore: $message',
-                    textAlign: TextAlign.center,
+    return BlocListener<EditorBloc, EditorState>(
+      listenWhen: (previous, current) => current is EditorDeleted,
+      listener: (context, state) {
+        // Variante eliminata altrove mentre era aperta qui (ticket 23,
+        // user story 11): torna alla Libreria automaticamente.
+        final back = onBack ?? () => Navigator.maybePop(context);
+        back();
+      },
+      child: BlocBuilder<EditorBloc, EditorState>(
+        builder: (context, state) {
+          return switch (state) {
+            // EditorDeleted condivide lo spinner: è uno stato transitorio,
+            // il BlocListener sopra sta già navigando via.
+            EditorInitial() || EditorLoading() || EditorDeleted() =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
+            EditorLoadError(:final message) => Scaffold(
+                appBar: AppBar(
+                  leading: BackButton(onPressed: onBack),
+                  title: const Text('Editor'),
+                ),
+                body: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      'Errore: $message',
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
               ),
-            ),
-          EditorReady() => _EditorReadyView(state: state, onBack: onBack),
-        };
-      },
+            EditorReady() => _EditorReadyView(state: state, onBack: onBack),
+          };
+        },
+      ),
     );
   }
 }

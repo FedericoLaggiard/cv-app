@@ -59,6 +59,24 @@ void main() {
     });
   });
 
+  group('EditorBloc — eliminazione della variante aperta (ticket 23)', () {
+    test('delete della variante aperta altrove → EditorDeleted', () async {
+      final repo = InMemoryCvRepository();
+      final id = await _seedVariant(repo, name: 'Alpha');
+      final bloc = EditorBloc(repository: repo, debounce: _testDebounce);
+
+      bloc.add(EditorStarted(id));
+      await _pumpEventLoop();
+      expect(bloc.state, isA<EditorReady>());
+
+      await repo.delete(id);
+      await _pumpEventLoop();
+
+      expect(bloc.state, isA<EditorDeleted>());
+      await bloc.close();
+    });
+  });
+
   group('EditorBloc — mutazioni e auto-save', () {
     test('VariantNameChanged → dirty=true, save dopo debounce, dirty=false',
         () async {
