@@ -15,6 +15,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/cv_section.dart';
+import '../../pdf/filename_sanitizer.dart';
+import '../../pdf/pdf_delivery.dart';
+import '../../pdf/pdf_exporter.dart';
 import '../../repository/cv_repository.dart';
 import 'editor_bloc.dart';
 import 'widgets/add_section_dialog.dart';
@@ -24,6 +27,7 @@ import 'widgets/contatti_form.dart';
 import 'widgets/custom_section_form.dart';
 import 'widgets/editable_text_field.dart';
 import 'widgets/esperienze_form.dart';
+import 'widgets/export_pdf_dialog.dart';
 import 'widgets/formazione_form.dart';
 import 'widgets/lingue_form.dart';
 import 'widgets/section_shell.dart';
@@ -44,25 +48,40 @@ class EditorScreen extends StatelessWidget {
     required this.variantId,
     required this.repository,
     this.onBack,
+    this.pdfExporter = const DefaultPdfExporter(),
+    this.pdfDelivery,
   });
 
   final String variantId;
   final CvRepository repository;
   final VoidCallback? onBack;
 
+  /// Iniettabile per i test; di default il template Classico via `pdf`.
+  final PdfExporter pdfExporter;
+
+  /// Iniettabile per i test; `null` risolve alla delivery di piattaforma
+  /// al momento dell'export (non può essere un default costante).
+  final PdfDelivery? pdfDelivery;
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider<EditorBloc>(
       create: (_) =>
           EditorBloc(repository: repository)..add(EditorStarted(variantId)),
-      child: _EditorView(onBack: onBack),
+      child: _EditorView(
+        onBack: onBack,
+        pdfExporter: pdfExporter,
+        pdfDelivery: pdfDelivery,
+      ),
     );
   }
 }
 
 class _EditorView extends StatelessWidget {
-  const _EditorView({this.onBack});
+  const _EditorView({this.onBack, required this.pdfExporter, this.pdfDelivery});
   final VoidCallback? onBack;
+  final PdfExporter pdfExporter;
+  final PdfDelivery? pdfDelivery;
 
   @override
   Widget build(BuildContext context) {
@@ -82,21 +101,23 @@ class _EditorView extends StatelessWidget {
             EditorInitial() || EditorLoading() || EditorDeleted() =>
               const Scaffold(body: Center(child: CircularProgressIndicator())),
             EditorLoadError(:final message) => Scaffold(
-                appBar: AppBar(
-                  leading: BackButton(onPressed: onBack),
-                  title: const Text('Editor'),
-                ),
-                body: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Text(
-                      'Errore: $message',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+              appBar: AppBar(
+                leading: BackButton(onPressed: onBack),
+                title: const Text('Editor'),
+              ),
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text('Errore: $message', textAlign: TextAlign.center),
                 ),
               ),
-            EditorReady() => _EditorReadyView(state: state, onBack: onBack),
+            ),
+            EditorReady() => _EditorReadyView(
+              state: state,
+              onBack: onBack,
+              pdfExporter: pdfExporter,
+              pdfDelivery: pdfDelivery,
+            ),
           };
         },
       ),
@@ -105,9 +126,16 @@ class _EditorView extends StatelessWidget {
 }
 
 class _EditorReadyView extends StatefulWidget {
-  const _EditorReadyView({required this.state, this.onBack});
+  const _EditorReadyView({
+    required this.state,
+    this.onBack,
+    required this.pdfExporter,
+    this.pdfDelivery,
+  });
   final EditorReady state;
   final VoidCallback? onBack;
+  final PdfExporter pdfExporter;
+  final PdfDelivery? pdfDelivery;
 
   @override
   State<_EditorReadyView> createState() => _EditorReadyViewState();
@@ -135,6 +163,8 @@ class _EditorReadyViewState extends State<_EditorReadyView> {
         wide: wide,
         onBack: widget.onBack,
         keyFor: _keyFor,
+        pdfExporter: widget.pdfExporter,
+        pdfDelivery: widget.pdfDelivery,
       ),
       body: wide
           ? _WideLayout(state: state, keyFor: _keyFor)
@@ -151,12 +181,16 @@ class _EditorTopBar extends StatelessWidget implements PreferredSizeWidget {
     required this.wide,
     required this.keyFor,
     this.onBack,
+    required this.pdfExporter,
+    this.pdfDelivery,
   });
 
   final EditorReady state;
   final bool wide;
   final SectionKeyLookup keyFor;
   final VoidCallback? onBack;
+  final PdfExporter pdfExporter;
+  final PdfDelivery? pdfDelivery;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -164,7 +198,9 @@ class _EditorTopBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      leading: BackButton(onPressed: onBack ?? () => Navigator.maybePop(context)),
+      leading: BackButton(
+        onPressed: onBack ?? () => Navigator.maybePop(context),
+      ),
       title: Row(
         children: [
           if (!wide)
@@ -186,10 +222,66 @@ class _EditorTopBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       titleSpacing: 8,
       actions: [
+        IconButton(
+          key: const Key('editor_export_pdf'),
+          tooltip: 'Esporta PDF',
+          icon: const Icon(Icons.picture_as_pdf_outlined),
+          onPressed: () =>
+              _handleExport(context, state, pdfExporter, pdfDelivery),
+        ),
         _SaveIndicator(status: state.saveStatus, dirty: state.dirty),
         const SizedBox(width: 12),
       ],
     );
+  }
+}
+
+Future<void> _handleExport(
+  BuildContext context,
+  EditorReady state,
+  PdfExporter pdfExporter,
+  PdfDelivery? pdfDelivery,
+) async {
+  final choice = await showExportPdfDialog(
+    context,
+    document: state.document,
+    missing: state.missing,
+  );
+  if (choice == null || !context.mounted) return;
+
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  DeliveryResult result;
+  try {
+    final bytes = await pdfExporter.render(
+      document: state.document,
+      template: choice.template,
+      labelLocale: choice.labelLocale,
+    );
+    final suggestedName = '${sanitizeFileName(state.document.variantName)}.pdf';
+    result = await (pdfDelivery ?? defaultPdfDelivery()).deliver(
+      bytes,
+      suggestedName,
+    );
+  } catch (e) {
+    result = DeliveryError(e.toString());
+  }
+
+  if (!context.mounted) return;
+  Navigator.of(context, rootNavigator: true).pop();
+
+  final message = switch (result) {
+    DeliverySuccess() => null,
+    DeliveryCancelled() => null,
+    DeliveryError(:final message) => 'Export PDF fallito: $message',
+  };
+  if (message != null) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -206,10 +298,11 @@ class _SaveIndicator extends StatelessWidget {
         key: const Key('save_indicator_error'),
         onPressed: () =>
             context.read<EditorBloc>().add(const SaveRetryRequested()),
-        icon: Icon(Icons.warning_amber_rounded,
-            color: theme.colorScheme.error),
-        label: Text('Errore [Riprova]',
-            style: TextStyle(color: theme.colorScheme.error)),
+        icon: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+        label: Text(
+          'Errore [Riprova]',
+          style: TextStyle(color: theme.colorScheme.error),
+        ),
       );
     }
     if (status.isSaving) {
@@ -264,7 +357,9 @@ class _WideLayout extends StatelessWidget {
           child: _Sidebar(state: state, keyFor: keyFor),
         ),
         const VerticalDivider(width: 1),
-        Expanded(child: _EditorBody(state: state, keyFor: keyFor)),
+        Expanded(
+          child: _EditorBody(state: state, keyFor: keyFor),
+        ),
       ],
     );
   }
@@ -304,11 +399,7 @@ Future<void> _openIndexSheet(
 // ─────────────────────────── Sidebar / indice ──────────────────────────────
 
 class _Sidebar extends StatelessWidget {
-  const _Sidebar({
-    required this.state,
-    required this.keyFor,
-    this.onJumpTo,
-  });
+  const _Sidebar({required this.state, required this.keyFor, this.onJumpTo});
   final EditorReady state;
   final SectionKeyLookup keyFor;
   final VoidCallback? onJumpTo;
@@ -333,14 +424,14 @@ class _Sidebar extends StatelessWidget {
                   dense: true,
                   title: Text(s.displayTitle),
                   trailing: missing > 0
-                      ? Icon(Icons.warning_amber_rounded,
+                      ? Icon(
+                          Icons.warning_amber_rounded,
                           size: 18,
-                          color: Theme.of(context).colorScheme.error)
+                          color: Theme.of(context).colorScheme.error,
+                        )
                       : null,
                   onTap: () {
-                    context
-                        .read<EditorBloc>()
-                        .add(SectionExpanded(i));
+                    context.read<EditorBloc>().add(SectionExpanded(i));
                     onJumpTo?.call();
                     _scrollTo(keyFor, i);
                   },
@@ -361,18 +452,18 @@ class _Sidebar extends StatelessWidget {
               Expanded(
                 child: TextButton(
                   key: const Key('sidebar_collapse_all'),
-                  onPressed: () => context
-                      .read<EditorBloc>()
-                      .add(const AllSectionsCollapseSet(true)),
+                  onPressed: () => context.read<EditorBloc>().add(
+                    const AllSectionsCollapseSet(true),
+                  ),
                   child: const Text('Comprimi tutte'),
                 ),
               ),
               Expanded(
                 child: TextButton(
                   key: const Key('sidebar_expand_all'),
-                  onPressed: () => context
-                      .read<EditorBloc>()
-                      .add(const AllSectionsCollapseSet(false)),
+                  onPressed: () => context.read<EditorBloc>().add(
+                    const AllSectionsCollapseSet(false),
+                  ),
                   child: const Text('Espandi tutte'),
                 ),
               ),
@@ -432,9 +523,7 @@ class _EditorBody extends StatelessWidget {
         if (rawNewIndex > doc.sections.length) {
           rawNewIndex = doc.sections.length;
         }
-        context
-            .read<EditorBloc>()
-            .add(SectionReordered(oldIndex, rawNewIndex));
+        context.read<EditorBloc>().add(SectionReordered(oldIndex, rawNewIndex));
       },
       itemBuilder: (context, i) {
         if (i == doc.sections.length) {
@@ -468,20 +557,19 @@ class _EditorBody extends StatelessWidget {
   }
 
   Widget _sectionBody(CvSection s, int index) => switch (s) {
-        AnagraficaSection() => AnagraficaForm(index: index, section: s),
-        ContattiSection() => ContattiForm(index: index, section: s),
-        SommarioSection() => SommarioForm(index: index, section: s),
-        EsperienzeSection() => EsperienzeForm(index: index, section: s),
-        FormazioneSection() => FormazioneForm(index: index, section: s),
-        SkillSection() => SkillForm(index: index, section: s),
-        LingueSection() => LingueForm(index: index, section: s),
-        CertificazioniSection() =>
-          CertificazioniForm(index: index, section: s),
-        CustomSection() => CustomSectionForm(index: index, section: s),
-      };
+    AnagraficaSection() => AnagraficaForm(index: index, section: s),
+    ContattiSection() => ContattiForm(index: index, section: s),
+    SommarioSection() => SommarioForm(index: index, section: s),
+    EsperienzeSection() => EsperienzeForm(index: index, section: s),
+    FormazioneSection() => FormazioneForm(index: index, section: s),
+    SkillSection() => SkillForm(index: index, section: s),
+    LingueSection() => LingueForm(index: index, section: s),
+    CertificazioniSection() => CertificazioniForm(index: index, section: s),
+    CustomSection() => CustomSectionForm(index: index, section: s),
+  };
 }
 
 String _sectionKey(CvSection s) => switch (s) {
-      CustomSection(:final id) => 'custom_$id',
-      _ => s.kind.wire,
-    };
+  CustomSection(:final id) => 'custom_$id',
+  _ => s.kind.wire,
+};
