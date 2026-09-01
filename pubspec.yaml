@@ -108,6 +108,17 @@ flutter:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
+  # EB Garamond (SIL OFL, docs/cv-app/issues/08-design-template.md) embedded
+  # via pw.Font.ttf() for the export PDF templates (ticket 24). Not
+  # registered as a Flutter font family: loaded as raw bytes by
+  # lib/src/pdf/pdf_fonts.dart, so it only needs to live under `assets:`.
+  assets:
+    - assets/fonts/EBGaramond-Regular.ttf
+    - assets/fonts/EBGaramond-Italic.ttf
+    - assets/fonts/EBGaramond-SemiBold.ttf
+    - assets/fonts/EBGaramond-Bold.ttf
+    - assets/fonts/EBGaramond-BoldItalic.ttf
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
