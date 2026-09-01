@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../../../domain/cv_section.dart';
 import '../editor_bloc.dart';
 import 'editable_text_field.dart';
+import 'rich_text_field.dart';
 import 'year_month_field.dart';
 
 class FormazioneForm extends StatelessWidget {
@@ -186,10 +187,13 @@ class _FormazioneItemForm extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          EditableTextField(
-            label: 'Descrizione (Markdown non ancora disponibile)',
-            initialText: item.descrizione ?? '',
-            maxLines: 3,
+          Text('Descrizione', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 4),
+          RichTextField(
+            fieldKey: Key('formazione_descrizione_${item.id}'),
+            value: item.descrizione ?? '',
+            placeholder: 'Descrivi il percorso di studi…',
+            minLines: 3,
             onChanged: (v) =>
                 onChanged(item.copyWith(descrizione: v.isEmpty ? null : v)),
           ),

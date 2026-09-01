@@ -2,6 +2,7 @@
 library;
 
 import 'package:cv_app/src/domain/cv_section.dart';
+import 'package:cv_app/src/domain/year_month.dart';
 import 'package:cv_app/src/repository/in_memory_cv_repository.dart';
 import 'package:cv_app/src/ui/editor/editor_screen.dart';
 import 'package:flutter/material.dart';
@@ -412,6 +413,67 @@ void main() {
       final skill = salvato.sections.single as SkillSection;
       expect(skill.data.markdown, 'Esperto di Flutter');
       expect(skill.data.tags, ['Dart']);
+    });
+
+    testWidgets('Esperienza: la descrizione della voce usa il RichTextField',
+        (tester) async {
+      final repo = InMemoryCvRepository();
+      final id = await _seed(repo, [
+        EsperienzeSection(
+          displayTitle: 'Esperienze',
+          items: [
+            EsperienzaItem(
+              id: 'e1',
+              ruolo: 'Sviluppatore',
+              azienda: 'Acme',
+              startDate: YearMonth(2020, 1),
+            ),
+          ],
+        ),
+      ]);
+
+      await tester.pumpWidget(_makeApp(repository: repo, variantId: id));
+      await _settle(tester);
+
+      await tester.enterText(
+        find.byKey(const Key('esperienza_descrizione_e1')),
+        '- realizzato X\n- **guidato** il team',
+      );
+      await tester.pump();
+      await tester.pump(_oltreIlDebounce);
+      await tester.pump();
+
+      final salvato = await repo.watch(id).first;
+      final esperienze = salvato.sections.single as EsperienzeSection;
+      expect(esperienze.items.single.descrizione, '- realizzato X\n- **guidato** il team');
+    });
+
+    testWidgets('Formazione: la descrizione della voce usa il RichTextField',
+        (tester) async {
+      final repo = InMemoryCvRepository();
+      final id = await _seed(repo, [
+        FormazioneSection(
+          displayTitle: 'Formazione',
+          items: [
+            const FormazioneItem(id: 'f1', titolo: 'Laurea in Informatica'),
+          ],
+        ),
+      ]);
+
+      await tester.pumpWidget(_makeApp(repository: repo, variantId: id));
+      await _settle(tester);
+
+      await tester.enterText(
+        find.byKey(const Key('formazione_descrizione_f1')),
+        'Tesi su _sistemi distribuiti_',
+      );
+      await tester.pump();
+      await tester.pump(_oltreIlDebounce);
+      await tester.pump();
+
+      final salvato = await repo.watch(id).first;
+      final formazione = salvato.sections.single as FormazioneSection;
+      expect(formazione.items.single.descrizione, 'Tesi su _sistemi distribuiti_');
     });
   });
 

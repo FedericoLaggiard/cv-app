@@ -10,6 +10,7 @@ import '../../../domain/enums.dart';
 import '../../../domain/year_month.dart';
 import '../editor_bloc.dart';
 import 'editable_text_field.dart';
+import 'rich_text_field.dart';
 import 'year_month_field.dart';
 
 class EsperienzeForm extends StatelessWidget {
@@ -220,10 +221,13 @@ class _EsperienzaItemForm extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          EditableTextField(
-            label: 'Descrizione (Markdown non ancora disponibile)',
-            initialText: item.descrizione ?? '',
-            maxLines: 4,
+          Text('Descrizione', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 4),
+          RichTextField(
+            fieldKey: Key('esperienza_descrizione_${item.id}'),
+            value: item.descrizione ?? '',
+            placeholder: 'Descrivi responsabilità e risultati…',
+            minLines: 4,
             onChanged: (v) =>
                 onChanged(item.copyWith(descrizione: v.isEmpty ? null : v)),
           ),
