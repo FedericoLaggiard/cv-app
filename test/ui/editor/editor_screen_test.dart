@@ -76,6 +76,28 @@ void main() {
       expect(find.textContaining('Errore:'), findsOneWidget);
     });
 
+    testWidgets(
+        'variante eliminata mentre aperta → torna alla Libreria (ticket 23)',
+        (tester) async {
+      final repo = InMemoryCvRepository();
+      final id = await _seed(repo, const []);
+      var backCalled = false;
+
+      await tester.pumpWidget(_makeApp(
+        repository: repo,
+        variantId: id,
+        onBack: () => backCalled = true,
+      ));
+      await _settle(tester);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      await repo.delete(id);
+      await tester.pump();
+      await tester.pump();
+
+      expect(backCalled, isTrue);
+    });
+
     testWidgets('variante esistente → nome nella top bar', (tester) async {
       final repo = InMemoryCvRepository();
       final id = await _seed(repo, const [], name: 'Frontend Sr');
