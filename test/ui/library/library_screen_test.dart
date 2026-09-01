@@ -215,4 +215,170 @@ void main() {
       expect(find.text('ToDelete'), findsNothing);
     });
   });
+
+  group('LibraryScreen — rename flow', () {
+    testWidgets('confirming rename updates the card title', (tester) async {
+      final repo = InMemoryCvRepository();
+      final doc = await repo.create(initialVariantName: 'Old name');
+      final cubit = _loadedCubit(repo);
+
+      await tester.pumpWidget(_makeApp(cubit: cubit));
+      await _settleLibrary(tester);
+
+      await tester.tap(find.byKey(Key('variant_menu_${doc.id}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Rinomina'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('rename_field')),
+        'New name',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('rename_confirm')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Old name'), findsNothing);
+      expect(find.text('New name'), findsOneWidget);
+    });
+
+    testWidgets(
+        'rename dialog shows a live inline error and disables confirm on '
+        'name collision', (tester) async {
+      final repo = InMemoryCvRepository();
+      await repo.create(initialVariantName: 'Taken');
+      final doc = await repo.create(initialVariantName: 'Renaming me');
+      final cubit = _loadedCubit(repo);
+
+      await tester.pumpWidget(_makeApp(cubit: cubit));
+      await _settleLibrary(tester);
+
+      await tester.tap(find.byKey(Key('variant_menu_${doc.id}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Rinomina'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('rename_field')), 'Taken');
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('rename_field')),
+      );
+      expect(field.decoration?.errorText, isNotNull);
+      final button = tester.widget<FilledButton>(
+        find.byKey(const Key('rename_confirm')),
+      );
+      expect(button.onPressed, isNull);
+    });
+  });
+
+  group('LibraryScreen — duplicate from card flow', () {
+    testWidgets(
+        'confirming Duplica creates the copy and navigates to it',
+        (tester) async {
+      final repo = InMemoryCvRepository();
+      final doc = await repo.create(initialVariantName: 'Base');
+      final cubit = _loadedCubit(repo);
+
+      String? openedId;
+      await tester.pumpWidget(
+        _makeApp(cubit: cubit, onOpenVariant: (id) => openedId = id),
+      );
+      await _settleLibrary(tester);
+
+      await tester.tap(find.byKey(Key('variant_menu_${doc.id}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Duplica'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('duplicate_confirm')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Base (2)'), findsOneWidget);
+      expect(openedId, isNotNull);
+      expect(openedId, isNot(doc.id));
+    });
+  });
+
+  group('LibraryScreen — Duplica una variante… from + Nuova', () {
+    testWidgets(
+        'changing the source dropdown refills the name, and confirming '
+        'creates the copy and navigates to it', (tester) async {
+      final repo = InMemoryCvRepository();
+      await repo.create(initialVariantName: 'Alpha');
+      final b = await repo.create(initialVariantName: 'Beta');
+      final cubit = _loadedCubit(repo);
+
+      String? openedId;
+      await tester.pumpWidget(
+        _makeApp(cubit: cubit, onOpenVariant: (id) => openedId = id),
+      );
+      await _settleLibrary(tester);
+
+      await tester.tap(find.byKey(const Key('new_variant_card')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('new_duplicate')));
+      await tester.pumpAndSettle();
+
+      // Dropdown defaults to the most recently updated variant (Beta).
+      final beforeField = tester.widget<TextField>(
+        find.byKey(const Key('duplicate_from_new_name_field')),
+      );
+      expect(beforeField.controller?.text, 'Beta (2)');
+
+      await tester.tap(find.byKey(const Key('duplicate_source_dropdown')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Alpha').last);
+      await tester.pumpAndSettle();
+
+      final afterField = tester.widget<TextField>(
+        find.byKey(const Key('duplicate_from_new_name_field')),
+      );
+      expect(afterField.controller?.text, 'Alpha (2)');
+
+      await tester.tap(find.byKey(const Key('duplicate_from_new_confirm')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alpha (2)'), findsOneWidget);
+      expect(openedId, isNotNull);
+      expect(openedId, isNot(b.id));
+    });
+  });
+
+  group('LibraryScreen — integration: duplicate then delete original', () {
+    testWidgets(
+        'duplicating a variant then deleting the original leaves only the '
+        'copy', (tester) async {
+      final repo = InMemoryCvRepository();
+      final original = await repo.create(initialVariantName: 'Original');
+      await repo.create(initialVariantName: 'Other');
+      final cubit = _loadedCubit(repo);
+
+      String? openedId;
+      await tester.pumpWidget(
+        _makeApp(cubit: cubit, onOpenVariant: (id) => openedId = id),
+      );
+      await _settleLibrary(tester);
+
+      await tester.tap(find.byKey(Key('variant_menu_${original.id}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Duplica'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('duplicate_confirm')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Original (2)'), findsOneWidget);
+      expect(openedId, isNotNull);
+
+      await tester.tap(find.byKey(Key('variant_menu_${original.id}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Elimina'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('delete_confirm')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Original'), findsNothing);
+      expect(find.text('Original (2)'), findsOneWidget);
+      expect(find.text('Other'), findsOneWidget);
+    });
+  });
 }

@@ -360,6 +360,19 @@ void main() {
       expect(bloc.state, isA<EditorDeleted>());
       await bloc.close();
     });
+
+    test(
+        'delete tra EditorStarted e il primo snapshot → EditorDeleted, non '
+        'blocca su EditorLoading', () async {
+      final repo = _DeletedBeforeFirstEmitRepo();
+      final bloc = EditorBloc(repository: repo, debounce: _testDebounce);
+
+      bloc.add(const EditorStarted('raced-id'));
+      await _pumpEventLoop();
+
+      expect(bloc.state, isA<EditorDeleted>());
+      await bloc.close();
+    });
   });
 }
 
@@ -461,6 +474,32 @@ class _NotFoundOnSaveRepo implements CvRepository {
       _inner.importFromBytes(bytes);
   @override
   Future<Uint8List> exportToBytes(String id) => _inner.exportToBytes(id);
+}
+
+/// Repo il cui `watch()` chiude subito lo stream senza mai emettere un
+/// documento né un errore — simula una `delete` che vince la race col primo
+/// snapshot (variante esistente al momento di `EditorStarted`, sparita prima
+/// che arrivi il primo documento).
+class _DeletedBeforeFirstEmitRepo implements CvRepository {
+  @override
+  Stream<CvDocument> watch(String id) => const Stream.empty();
+
+  @override
+  Stream<List<VariantSummary>> watchAll() => const Stream.empty();
+  @override
+  Future<void> save(doc) async {}
+  @override
+  Future<CvDocument> create({String? initialVariantName}) =>
+      throw UnimplementedError();
+  @override
+  Future<CvDocument> duplicate(String id) => throw UnimplementedError();
+  @override
+  Future<void> delete(String id) async {}
+  @override
+  Future<ImportResult> importFromBytes(Uint8List bytes) =>
+      throw UnimplementedError();
+  @override
+  Future<Uint8List> exportToBytes(String id) => throw UnimplementedError();
 }
 
 // Assicura che `Uuid` sia disponibile (importato più su) — usato indirettamente

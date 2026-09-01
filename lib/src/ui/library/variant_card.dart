@@ -24,11 +24,17 @@ class VariantCard extends StatelessWidget {
     required this.summary,
     required this.onOpen,
     required this.formatUpdatedAt,
+    this.onDuplicated,
   });
 
   final VariantSummary summary;
   final VoidCallback onOpen;
   final String Function(DateTime) formatUpdatedAt;
+
+  /// Called with the new variant's id once a duplicate started from this
+  /// card's [⋯] menu completes — the caller navigates to its editor
+  /// (ticket 23, user story 8).
+  final void Function(String newVariantId)? onDuplicated;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +59,7 @@ class VariantCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  _VariantMenu(summary: summary),
+                  _VariantMenu(summary: summary, onDuplicated: onDuplicated),
                 ],
               ),
               const SizedBox(height: 4),
@@ -81,9 +87,10 @@ class VariantCard extends StatelessWidget {
 }
 
 class _VariantMenu extends StatelessWidget {
-  const _VariantMenu({required this.summary});
+  const _VariantMenu({required this.summary, this.onDuplicated});
 
   final VariantSummary summary;
+  final void Function(String newVariantId)? onDuplicated;
 
   static const _items = <(VariantMenuAction, IconData, String)>[
     (VariantMenuAction.rename, Icons.edit_outlined, 'Rinomina'),
@@ -164,7 +171,8 @@ class _VariantMenu extends StatelessWidget {
           sourceName: summary.variantName,
         );
         if (name != null) {
-          await cubit.duplicateVariantAs(summary.id, name);
+          final newId = await cubit.duplicateVariantAs(summary.id, name);
+          if (newId != null) onDuplicated?.call(newId);
         }
       case VariantMenuAction.export:
         // Export UI (file picker + share sheet) lands with a later ticket.

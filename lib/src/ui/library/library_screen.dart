@@ -162,6 +162,7 @@ class _LibraryGrid extends StatelessWidget {
           key: Key('variant_card_${v.id}'),
           summary: v,
           onOpen: () => onOpenVariant?.call(v.id),
+          onDuplicated: onOpenVariant,
           formatUpdatedAt: _relativeTime,
         ),
       ),

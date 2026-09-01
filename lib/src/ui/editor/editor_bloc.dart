@@ -281,10 +281,17 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
   }
 
   void _onDocumentDeleted(_DocumentDeleted e, Emitter<EditorState> emit) {
-    // Lo stream si chiude anche quando `watch()` non trova subito l'id
-    // (dopo l'errore "not found" già gestito da `_onStreamErrored`); qui
-    // ci interessa solo il caso "era aperto e ora è sparito".
-    if (state is EditorReady) emit(const EditorDeleted());
+    // Lo stream si chiude anche quando `watch()` non trova subito l'id:
+    // in quel caso `_onStreamErrored` ha già portato lo stato a
+    // `EditorLoadError` prima che questo evento venga processato, quindi
+    // il branch sotto non scatta. Se invece siamo ancora `EditorLoading`
+    // (nessun errore ricevuto) o `EditorReady`, il documento esisteva ed
+    // è stato eliminato altrove — comprende sia il caso "era aperto ed è
+    // sparito" sia la corsa rara in cui la delete arriva prima del primo
+    // snapshot.
+    if (state is EditorReady || state is EditorLoading) {
+      emit(const EditorDeleted());
+    }
   }
 
   void _onDocumentReceived(_DocumentReceived e, Emitter<EditorState> emit) {
