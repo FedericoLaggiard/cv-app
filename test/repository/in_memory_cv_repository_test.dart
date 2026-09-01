@@ -92,6 +92,19 @@ void main() {
       final bad = a.copyWith(variantName: '   ');
       await expectLater(repo.save(bad), throwsA(anything));
     });
+
+    test('throws CvRepositoryNotFound if the id was deleted, and does not '
+        'resurrect it', () async {
+      final repo = _repo();
+      final a = await repo.create(initialVariantName: 'A');
+      await repo.delete(a.id);
+
+      await expectLater(
+        repo.save(a),
+        throwsA(isA<CvRepositoryNotFound>()),
+      );
+      expect(repo.debugIds, isNot(contains(a.id)));
+    });
   });
 
   group('delete', () {

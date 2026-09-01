@@ -341,6 +341,25 @@ void main() {
 
       await bloc.close();
     });
+
+    test('save() throws CvRepositoryNotFound (delete-race) → EditorDeleted, '
+        'non SaveStatus.error', () async {
+      final inner = InMemoryCvRepository();
+      final id = await _seedVariant(inner);
+      final repo = _NotFoundOnSaveRepo(inner);
+      final bloc = EditorBloc(repository: repo, debounce: _testDebounce);
+      bloc.add(EditorStarted(id));
+      await _pumpEventLoop();
+      expect(bloc.state, isA<EditorReady>());
+
+      repo.throwNotFoundNext = true;
+      bloc.add(const VariantNameChanged('Race'));
+      await Future<void>.delayed(_testDebounce * 3);
+      await _pumpEventLoop();
+
+      expect(bloc.state, isA<EditorDeleted>());
+      await bloc.close();
+    });
   });
 }
 
@@ -387,6 +406,41 @@ class _FailingSaveRepo implements CvRepository {
     if (failNext) {
       failNext = false;
       throw StateError('save simulata fallita');
+    }
+    await _inner.save(doc);
+  }
+
+  @override
+  Stream<List<VariantSummary>> watchAll() => _inner.watchAll();
+  @override
+  Stream<CvDocument> watch(String id) => _inner.watch(id);
+  @override
+  Future<CvDocument> create({String? initialVariantName}) =>
+      _inner.create(initialVariantName: initialVariantName);
+  @override
+  Future<CvDocument> duplicate(String id) => _inner.duplicate(id);
+  @override
+  Future<void> delete(String id) => _inner.delete(id);
+  @override
+  Future<ImportResult> importFromBytes(Uint8List bytes) =>
+      _inner.importFromBytes(bytes);
+  @override
+  Future<Uint8List> exportToBytes(String id) => _inner.exportToBytes(id);
+}
+
+/// Repo che simula una save() che perde la race con un delete concorrente:
+/// lo `watch()` sottostante resta aperto (il delete non è passato
+/// dall'`_inner` repo), solo `save()` alza `CvRepositoryNotFound` on-demand.
+class _NotFoundOnSaveRepo implements CvRepository {
+  final InMemoryCvRepository _inner;
+  bool throwNotFoundNext = false;
+  _NotFoundOnSaveRepo(this._inner);
+
+  @override
+  Future<void> save(doc) async {
+    if (throwNotFoundNext) {
+      throwNotFoundNext = false;
+      throw CvRepositoryNotFound(doc.id);
     }
     await _inner.save(doc);
   }

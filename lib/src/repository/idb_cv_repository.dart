@@ -236,7 +236,24 @@ class IdbCvRepository implements CvRepository {
     final gcd = garbageCollectAssets(doc);
     validateStructure(gcd);
     final stamped = gcd.copyWith(updatedAt: _now().toUtc());
-    await _persist(stamped);
+    final db = await _open();
+    // Single readwrite transaction: the existence check and the put are
+    // atomic w.r.t. a concurrent delete() (which also takes a readwrite
+    // transaction on this store), so a delete racing this save can't be
+    // straddled — either it fully precedes us (and we throw) or fully
+    // follows us (and removes what we just wrote).
+    final tx = db.transaction(_storeName, idbModeReadWrite);
+    final store = tx.objectStore(_storeName);
+    final existing = await store.getObject(stamped.id);
+    if (existing == null) {
+      await tx.completed;
+      throw CvRepositoryNotFound(stamped.id);
+    }
+    final tree =
+        jsonDecode(CvDocumentCodec.toJsonString(stamped)) as Map<String, dynamic>;
+    await store.put(tree, stamped.id);
+    await tx.completed;
+    _bump.add(null);
   }
 
   @override

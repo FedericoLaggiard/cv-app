@@ -121,6 +121,7 @@ class InMemoryCvRepository implements CvRepository {
   @override
   Future<void> save(CvDocument doc) async {
     // Auto-save pipeline: GC unreferenced assets, validate, stamp updatedAt.
+    if (!_byId.containsKey(doc.id)) throw CvRepositoryNotFound(doc.id);
     if (_nameClashes(doc.variantName, excludeId: doc.id)) {
       throw DuplicateVariantNameException(doc.variantName.trim());
     }

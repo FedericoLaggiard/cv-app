@@ -481,6 +481,12 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
           dirty: stillDirty,
         ));
       }
+    } on CvRepositoryNotFound {
+      // La variante è stata cancellata altrove mentre questa save era in
+      // volo (race save/delete, indipendente dal ticket 23): niente da
+      // segnalare come errore recuperabile, il documento non esiste più.
+      _pendingEchoSuppression = false;
+      if (state is EditorReady) emit(const EditorDeleted());
     } catch (err) {
       _pendingEchoSuppression = false;
       final cur = state;

@@ -79,6 +79,22 @@ void main() {
         throwsA(isA<CvRepositoryNotFound>()),
       );
     });
+
+    test('save() after delete() throws CvRepositoryNotFound and does not '
+        'resurrect the record', () async {
+      final repo = _repo();
+      final a = await repo.create(initialVariantName: 'A');
+      await repo.delete(a.id);
+
+      await expectLater(
+        repo.save(a),
+        throwsA(isA<CvRepositoryNotFound>()),
+      );
+      await expectLater(
+        repo.exportToBytes(a.id),
+        throwsA(isA<CvRepositoryNotFound>()),
+      );
+    });
   });
 
   group('import', () {
