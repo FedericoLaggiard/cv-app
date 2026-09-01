@@ -21,12 +21,14 @@ import 'widgets/add_section_dialog.dart';
 import 'widgets/anagrafica_form.dart';
 import 'widgets/certificazioni_form.dart';
 import 'widgets/contatti_form.dart';
+import 'widgets/custom_section_form.dart';
 import 'widgets/editable_text_field.dart';
 import 'widgets/esperienze_form.dart';
 import 'widgets/formazione_form.dart';
 import 'widgets/lingue_form.dart';
 import 'widgets/section_shell.dart';
 import 'widgets/skill_form.dart';
+import 'widgets/sommario_form.dart';
 
 /// Breakpoint tra layout largo e mobile (ticket 07).
 const double kEditorWideBreakpoint = 900;
@@ -457,16 +459,14 @@ class _EditorBody extends StatelessWidget {
   Widget _sectionBody(CvSection s, int index) => switch (s) {
         AnagraficaSection() => AnagraficaForm(index: index, section: s),
         ContattiSection() => ContattiForm(index: index, section: s),
-        SommarioSection() => const _RichTextPlaceholder(
-            name: 'Sommario',
-          ),
+        SommarioSection() => SommarioForm(index: index, section: s),
         EsperienzeSection() => EsperienzeForm(index: index, section: s),
         FormazioneSection() => FormazioneForm(index: index, section: s),
         SkillSection() => SkillForm(index: index, section: s),
         LingueSection() => LingueForm(index: index, section: s),
         CertificazioniSection() =>
           CertificazioniForm(index: index, section: s),
-        CustomSection() => const _RichTextPlaceholder(name: 'Sezione custom'),
+        CustomSection() => CustomSectionForm(index: index, section: s),
       };
 }
 
@@ -474,32 +474,3 @@ String _sectionKey(CvSection s) => switch (s) {
       CustomSection(:final id) => 'custom_$id',
       _ => s.kind.wire,
     };
-
-class _RichTextPlaceholder extends StatelessWidget {
-  const _RichTextPlaceholder({required this.name});
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.edit_note_outlined),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '$name: editor di testo ricco disponibile presto.',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

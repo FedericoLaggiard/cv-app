@@ -1,5 +1,4 @@
-/// Form Skill — chip input per i tag; il blob Markdown è placeholder
-/// per Slice C.
+/// Form Skill — chip input per i tag + blob Markdown (Slice C).
 library;
 
 import 'package:flutter/material.dart';
@@ -7,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../domain/cv_section.dart';
 import '../editor_bloc.dart';
+import 'rich_text_field.dart';
 
 class SkillForm extends StatefulWidget {
   const SkillForm({
@@ -39,6 +39,14 @@ class _SkillFormState extends State<SkillForm> {
         .add(SectionAtIndexReplaced(widget.index, section));
   }
 
+  void _updateMarkdown(String markdown) {
+    final section =
+        widget.section.copyWith(data: widget.section.data.copyWith(markdown: markdown));
+    context
+        .read<EditorBloc>()
+        .add(SectionAtIndexReplaced(widget.index, section));
+  }
+
   void _addFromController() {
     final v = _controller.text.trim();
     if (v.isEmpty) return;
@@ -53,7 +61,6 @@ class _SkillFormState extends State<SkillForm> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final tags = widget.section.data.tags;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -97,10 +104,11 @@ class _SkillFormState extends State<SkillForm> {
           ),
         ]),
         const SizedBox(height: 12),
-        Text(
-          'Descrizione libera (Markdown non ancora disponibile).',
-          style: theme.textTheme.bodySmall
-              ?.copyWith(fontStyle: FontStyle.italic),
+        RichTextField(
+          fieldKey: Key('skill_markdown_${widget.index}'),
+          value: widget.section.data.markdown ?? '',
+          placeholder: 'Descrizione libera delle competenze…',
+          onChanged: _updateMarkdown,
         ),
       ],
     );

@@ -341,6 +341,80 @@ void main() {
     });
   });
 
+  group('EditorScreen — campi rich text (Slice C)', () {
+    testWidgets('Sommario: digitare in RichTextField salva il Markdown',
+        (tester) async {
+      final repo = InMemoryCvRepository();
+      final id = await _seed(repo, [
+        const SommarioSection(displayTitle: 'Sommario', markdown: ''),
+      ]);
+
+      await tester.pumpWidget(_makeApp(repository: repo, variantId: id));
+      await _settle(tester);
+
+      await tester.enterText(
+        find.byKey(const Key('sommario_field_0')),
+        '**Ciao** mondo',
+      );
+      await tester.pump();
+      await tester.pump(_oltreIlDebounce);
+      await tester.pump();
+
+      final salvato = await repo.watch(id).first;
+      final sommario = salvato.sections.single as SommarioSection;
+      expect(sommario.markdown, '**Ciao** mondo');
+    });
+
+    testWidgets('Sezione custom: digitare nel body salva il Markdown',
+        (tester) async {
+      final repo = InMemoryCvRepository();
+      final id = await _seed(repo, [
+        const CustomSection(id: 'c1', displayTitle: 'Pubblicazioni', markdown: ''),
+      ]);
+
+      await tester.pumpWidget(_makeApp(repository: repo, variantId: id));
+      await _settle(tester);
+
+      await tester.enterText(
+        find.byKey(const Key('custom_field_0')),
+        '- uno\n- due',
+      );
+      await tester.pump();
+      await tester.pump(_oltreIlDebounce);
+      await tester.pump();
+
+      final salvato = await repo.watch(id).first;
+      final custom = salvato.sections.single as CustomSection;
+      expect(custom.markdown, '- uno\n- due');
+    });
+
+    testWidgets('Skill: il blob Markdown convive coi tag ed è salvato',
+        (tester) async {
+      final repo = InMemoryCvRepository();
+      final id = await _seed(repo, [
+        SkillSection(displayTitle: 'Skill', data: SkillData(tags: const ['Dart'])),
+      ]);
+
+      await tester.pumpWidget(_makeApp(repository: repo, variantId: id));
+      await _settle(tester);
+
+      expect(find.byKey(const Key('skill_tag_Dart')), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const Key('skill_markdown_0')),
+        'Esperto di Flutter',
+      );
+      await tester.pump();
+      await tester.pump(_oltreIlDebounce);
+      await tester.pump();
+
+      final salvato = await repo.watch(id).first;
+      final skill = salvato.sections.single as SkillSection;
+      expect(skill.data.markdown, 'Esperto di Flutter');
+      expect(skill.data.tags, ['Dart']);
+    });
+  });
+
   group('EditorScreen — navigazione', () {
     testWidgets('il back invoca onBack', (tester) async {
       final repo = InMemoryCvRepository();
