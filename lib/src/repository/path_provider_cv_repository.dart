@@ -11,6 +11,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -263,7 +264,18 @@ class PathProviderCvRepository implements CvRepository {
         Uint8List.fromList(utf8.encode(CvDocumentCodec.toJsonString(doc)));
     await _fs.write(doc.id, bytes);
     if (requireExisting && !_isKnown(doc.id)) {
-      await _fs.delete(doc.id).catchError((_) {});
+      // Compensating delete for the write that just lost the race — if
+      // this itself fails, the file is orphaned on disk (harmless: it's
+      // in neither `_cache` nor `_corrupt`, so nothing re-surfaces it in
+      // the Libreria) but the failure would otherwise vanish silently.
+      await _fs.delete(doc.id).catchError(
+            (Object e) => log(
+              'Compensating delete failed for orphaned file ${doc.id} '
+              'after a lost save/delete race: $e',
+              name: 'PathProviderCvRepository',
+              level: 900, // Level.WARNING
+            ),
+          );
       throw CvRepositoryNotFound(doc.id);
     }
     _cache[doc.id] = doc;

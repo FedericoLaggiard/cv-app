@@ -105,6 +105,30 @@ void main() {
       );
       expect(fs.files, isEmpty);
     });
+
+    test(
+        'save() racing a concurrent delete() still throws '
+        'CvRepositoryNotFound even if the compensating cleanup delete '
+        'itself fails', () async {
+      final fs = FakeFileSystemService();
+      final repo = _repo(fs);
+      final a = await repo.create(initialVariantName: 'A');
+
+      // Simulate delete() landing on this repo instance while save()'s
+      // write is still in flight, then make the post-race compensating
+      // delete fail too — the swallowed-error path should not surface as
+      // anything other than the expected CvRepositoryNotFound.
+      fs.onWriteBeforeComplete = () async {
+        await repo.delete(a.id);
+        fs.failNextDelete = true;
+      };
+
+      await expectLater(
+        repo.save(a),
+        throwsA(isA<CvRepositoryNotFound>()),
+      );
+      expect(fs.files, isEmpty);
+    });
   });
 
   group('bootstrap: recover from files on disk', () {
