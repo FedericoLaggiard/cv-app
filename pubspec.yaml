@@ -82,6 +82,13 @@ dev_dependencies:
   # BLoC unit-test helpers (companion a flutter_bloc).
   bloc_test: ^10.0.0
 
+  # Rasterizzazione PNG per tool/generate_thumbnails.dart (ticket 25):
+  # niente dipendenza runtime dell'app, solo lo script offline che genera
+  # gli asset in assets/template_thumbnails/. Già presente transitivamente
+  # nel lockfile (via altre dipendenze), qui pinnata esplicitamente perché
+  # usata direttamente da codice del repo.
+  image: ^4.9.0
+
   # E2E testing pilotato via Patrol (amendment ticket 17).
   # patrol_cli e' un tool a se stante, si installa con
   # `dart pub global activate patrol_cli`.
@@ -118,6 +125,23 @@ flutter:
     - assets/fonts/EBGaramond-SemiBold.ttf
     - assets/fonts/EBGaramond-Bold.ttf
     - assets/fonts/EBGaramond-BoldItalic.ttf
+    # Inter (SIL OFL) for the Moderno template (ticket 25) and for
+    # Minimal's uppercase labels. Same loading pattern as EB Garamond,
+    # via lib/src/pdf/pdf_fonts.dart's ModernoFonts. JetBrains Mono
+    # (also planned in ticket 08) is intentionally NOT added here: the
+    # shared MarkdownPdfRenderer has no code-fence support yet, so no
+    # template actually renders monospace text — adding the asset now
+    # would just be dead weight.
+    - assets/fonts/Inter-Regular.ttf
+    - assets/fonts/Inter-Italic.ttf
+    - assets/fonts/Inter-SemiBold.ttf
+    - assets/fonts/Inter-Bold.ttf
+    - assets/fonts/Inter-BoldItalic.ttf
+    # Thumbnail PNGs for the export template picker (ticket 25), generated
+    # offline by tool/generate_thumbnails.dart.
+    - assets/template_thumbnails/classico.png
+    - assets/template_thumbnails/moderno.png
+    - assets/template_thumbnails/minimal.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

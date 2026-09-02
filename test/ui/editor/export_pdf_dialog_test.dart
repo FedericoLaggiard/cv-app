@@ -1,6 +1,7 @@
-/// Widget test sul dialog `Esporta PDF` (ticket 24): campi obbligatori
-/// mancanti → riepilogo mostrato + `Esporta comunque` visibile; scelta
-/// template + locale → passata correttamente nell'[ExportChoice].
+/// Widget test sul dialog `Esporta PDF` (ticket 24, amendment ticket 25):
+/// campi obbligatori mancanti → riepilogo mostrato + `Esporta comunque`
+/// visibile; scelta template (griglia thumbnail) + locale → passata
+/// correttamente nell'[ExportChoice].
 library;
 
 import 'package:cv_app/src/domain/cv_document.dart';
@@ -123,6 +124,38 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(captured!.labelLocale, LabelLocale.en);
+  });
+
+  testWidgets('selezionare Moderno nel TemplatePicker lo passa nella scelta', (
+    tester,
+  ) async {
+    ExportChoice? captured;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () async {
+              captured = await showExportPdfDialog(
+                context,
+                document: _doc(const []),
+                missing: MissingRequired.empty,
+              );
+            },
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('template_picker_option_moderno')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('export_confirm')));
+    await tester.pumpAndSettle();
+
+    expect(captured!.template, TemplateId.moderno);
   });
 
   testWidgets('Annulla chiude il dialog restituendo null', (tester) async {

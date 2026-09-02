@@ -8,12 +8,15 @@ import 'package:intl/date_symbol_data_local.dart';
 import '../domain/cv_document.dart';
 import 'classico_template.dart';
 import 'label_locale.dart';
+import 'minimal_template.dart';
+import 'moderno_template.dart';
 import 'pdf_fonts.dart';
 
-/// Template PDF disponibili. In questa slice solo [classico] è renderizzato;
-/// gli altri due (ticket 08) arriveranno con la Slice F.
+/// Template PDF disponibili (ticket 08, completati dalla Slice F/ticket 25).
 enum TemplateId {
-  classico('classico', 'Classico');
+  classico('classico', 'Classico'),
+  moderno('moderno', 'Moderno'),
+  minimal('minimal', 'Minimal');
 
   const TemplateId(this.wire, this.displayName);
   final String wire;
@@ -46,6 +49,28 @@ class DefaultPdfExporter implements PdfExporter {
           labels: labelsFor(labelLocale),
           locale: labelLocale,
           fonts: fonts,
+        );
+        return doc.save();
+      case TemplateId.moderno:
+        await initializeDateFormatting(labelLocale.intlLocale);
+        final fonts = await InterFonts.load();
+        final doc = ModernoTemplate.render(
+          document: document,
+          labels: modernoLabelsFor(labelLocale),
+          locale: labelLocale,
+          fonts: fonts,
+        );
+        return doc.save();
+      case TemplateId.minimal:
+        await initializeDateFormatting(labelLocale.intlLocale);
+        final labelFont = await InterFonts.load();
+        final bodyFonts = await ClassicoFonts.load();
+        final doc = MinimalTemplate.render(
+          document: document,
+          labels: minimalLabelsFor(labelLocale),
+          locale: labelLocale,
+          labelFont: labelFont,
+          bodyFonts: bodyFonts,
         );
         return doc.save();
     }

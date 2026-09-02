@@ -1,10 +1,16 @@
-/// Template PDF "Classico" (ticket 08/24) — audience ATS/formale.
+/// Template PDF "Minimal" (ticket 08/25) — audience senior/consulenza/
+/// creativi, tono editoriale.
 ///
-/// Singola colonna full-width, EB Garamond, palette solo neri/grigi.
-/// Foto profilo fuori scope in questa slice (Slice G, ticket 24 "Out of
-/// Scope"): l'header si espande sempre a piena larghezza.
+/// Singola colonna stretta (~72 caratteri di misura), zero colori: solo
+/// nero/grigio. Miscela tipografica intenzionale: Inter uppercase per le
+/// label (header di sezione, tracking largo), EB Garamond per il corpo.
+/// **Ignora sempre la foto per design** (ticket 08), anche se presente in
+/// `AnagraficaData.foto` — non è una degradazione, è la scelta stilistica
+/// del template. Se una foto è presente, viene emesso solo un warning in
+/// `debugMode` (nessun blocco, nessun rendering).
 library;
 
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -16,111 +22,120 @@ import 'markdown_pdf_renderer.dart';
 import 'pdf_fonts.dart';
 import 'template_shared.dart';
 
-const PdfColor _textColor = PdfColor.fromInt(0x111111);
-const PdfColor _metaColor = PdfColor.fromInt(0x555555);
-const PdfColor _hairlineColor = PdfColor.fromInt(0x888888);
-const PdfColor _linkColor = PdfColor.fromInt(0x1a1a1a);
+const PdfColor _bodyColor = PdfColor.fromInt(0x000000);
+const PdfColor _nameColor = PdfColor.fromInt(0x333333);
+const PdfColor _metaColor = PdfColor.fromInt(0x666666);
 
-class ClassicoTemplate {
-  ClassicoTemplate._();
+class MinimalTemplate {
+  MinimalTemplate._();
 
-  /// Renderizza [document] nel template Classico. [compress] è esposto
-  /// solo per i test (`false` lascia il content stream non compresso e
-  /// ispezionabile).
+  /// Renderizza [document] nel template Minimal. [labelFont] è Inter
+  /// (label uppercase), [bodyFonts] è EB Garamond (corpo/meta) — riusa lo
+  /// stesso font già embeddato da Classico (ticket 08/24), coerente col
+  /// vincolo "solo font già in bundle" quando la famiglia è la stessa.
+  /// [compress] è esposto solo per i test.
   static pw.Document render({
     required CvDocument document,
-    required ClassicoLabels labels,
+    required MinimalLabels labels,
     required LabelLocale locale,
-    required ClassicoFonts fonts,
+    required InterFonts labelFont,
+    required ClassicoFonts bodyFonts,
     bool compress = true,
   }) {
     final doc = pw.Document(compress: compress);
-
-    final nameStyle = pw.TextStyle(
-      fontNormal: fonts.regular,
-      fontBold: fonts.semiBold,
-      fontItalic: fonts.italic,
-      fontBoldItalic: fonts.boldItalic,
-      fontSize: 22,
-      color: _textColor,
-    );
-    final headlineStyle = pw.TextStyle(
-      fontNormal: fonts.regular,
-      fontBold: fonts.semiBold,
-      fontItalic: fonts.italic,
-      fontBoldItalic: fonts.boldItalic,
-      fontSize: 12,
-      fontStyle: pw.FontStyle.italic,
-      color: _textColor,
-    );
-    final sectionHeaderStyle = pw.TextStyle(
-      fontNormal: fonts.semiBold,
-      fontBold: fonts.semiBold,
-      fontItalic: fonts.italic,
-      fontBoldItalic: fonts.boldItalic,
-      fontSize: 13,
-      letterSpacing: 1.2,
-      color: _textColor,
-    );
-    final bodyStyle = pw.TextStyle(
-      fontNormal: fonts.regular,
-      fontBold: fonts.bold,
-      fontItalic: fonts.italic,
-      fontBoldItalic: fonts.boldItalic,
-      fontSize: 10.5,
-      lineSpacing: 3.5,
-      color: _textColor,
-    );
-    final metaStyle = pw.TextStyle(
-      fontNormal: fonts.italic,
-      fontBold: fonts.boldItalic,
-      fontItalic: fonts.italic,
-      fontBoldItalic: fonts.boldItalic,
-      fontSize: 10,
-      fontStyle: pw.FontStyle.italic,
-      color: _metaColor,
-    );
-    final pageHeaderStyle = pw.TextStyle(
-      fontNormal: fonts.italic,
-      fontBold: fonts.boldItalic,
-      fontItalic: fonts.italic,
-      fontBoldItalic: fonts.boldItalic,
-      fontSize: 9,
-      fontStyle: pw.FontStyle.italic,
-      color: _metaColor,
-    );
-
-    final markdown = MarkdownPdfRenderer(
-      baseStyle: bodyStyle,
-      linkColor: _linkColor,
-    );
     final dateFormat = DateFormat.yMMMM(locale.intlLocale);
 
     final anagrafica = document.sections
         .whereType<AnagraficaSection>()
         .firstOrNull;
-    final fullName = anagrafica == null
-        ? ''
-        : '${anagrafica.data.nome} ${anagrafica.data.cognome}'.trim();
+    if (kDebugMode && anagrafica?.data.foto != null) {
+      debugPrint(
+        'MinimalTemplate: foto profilo presente ma ignorata by design '
+        '(ticket 08, "il Minimal ignora sempre la foto").',
+      );
+    }
+
+    final nameStyle = pw.TextStyle(
+      fontNormal: labelFont.regular,
+      fontBold: labelFont.semiBold,
+      fontItalic: labelFont.italic,
+      fontBoldItalic: labelFont.boldItalic,
+      fontSize: 16,
+      letterSpacing: 0.4,
+      color: _nameColor,
+    );
+    final contattiStyle = pw.TextStyle(
+      fontNormal: labelFont.regular,
+      fontBold: labelFont.semiBold,
+      fontItalic: labelFont.italic,
+      fontBoldItalic: labelFont.boldItalic,
+      fontSize: 9,
+      color: _metaColor,
+    );
+    final headlineStyle = pw.TextStyle(
+      fontNormal: bodyFonts.regular,
+      fontBold: bodyFonts.bold,
+      fontItalic: bodyFonts.italic,
+      fontBoldItalic: bodyFonts.boldItalic,
+      fontSize: 10.5,
+      color: _metaColor,
+    );
+    final sectionHeaderStyle = pw.TextStyle(
+      fontNormal: labelFont.regular,
+      fontBold: labelFont.semiBold,
+      fontItalic: labelFont.italic,
+      fontBoldItalic: labelFont.boldItalic,
+      fontSize: 9.5,
+      letterSpacing: 1.6,
+      color: _metaColor,
+    );
+    final bodyStyle = pw.TextStyle(
+      fontNormal: bodyFonts.regular,
+      fontBold: bodyFonts.bold,
+      fontItalic: bodyFonts.italic,
+      fontBoldItalic: bodyFonts.boldItalic,
+      fontSize: 10.5,
+      lineSpacing: 4.5,
+      color: _bodyColor,
+    );
+    final metaStyle = pw.TextStyle(
+      fontNormal: bodyFonts.italic,
+      fontBold: bodyFonts.boldItalic,
+      fontItalic: bodyFonts.italic,
+      fontBoldItalic: bodyFonts.boldItalic,
+      fontSize: 10,
+      fontStyle: pw.FontStyle.italic,
+      color: _metaColor,
+    );
+    final pageNumberStyle = pw.TextStyle(
+      fontNormal: labelFont.regular,
+      fontBold: labelFont.semiBold,
+      fontItalic: labelFont.italic,
+      fontBoldItalic: labelFont.boldItalic,
+      fontSize: 8.5,
+      color: _metaColor,
+    );
+
+    final markdown = MarkdownPdfRenderer(
+      baseStyle: bodyStyle,
+      linkColor: _bodyColor,
+    );
 
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.only(
-          top: 18 * PdfPageFormat.mm,
-          bottom: 18 * PdfPageFormat.mm,
-          left: 16 * PdfPageFormat.mm,
-          right: 16 * PdfPageFormat.mm,
+          top: 22 * PdfPageFormat.mm,
+          bottom: 22 * PdfPageFormat.mm,
+          left: 28 * PdfPageFormat.mm,
+          right: 28 * PdfPageFormat.mm,
         ),
-        header: (context) {
+        footer: (context) {
           if (context.pageNumber <= 1) return pw.SizedBox();
           return pw.Container(
-            alignment: pw.Alignment.topRight,
-            margin: const pw.EdgeInsets.only(bottom: 10),
-            child: pw.Text(
-              '$fullName — ${labels.pagina} ${context.pageNumber}/${context.pagesCount}',
-              style: pageHeaderStyle,
-            ),
+            alignment: pw.Alignment.bottomRight,
+            margin: const pw.EdgeInsets.only(top: 10),
+            child: pw.Text('— ${context.pageNumber} —', style: pageNumberStyle),
           );
         },
         build: (context) => _buildBody(
@@ -129,6 +144,7 @@ class ClassicoTemplate {
           locale: locale,
           dateFormat: dateFormat,
           nameStyle: nameStyle,
+          contattiStyle: contattiStyle,
           headlineStyle: headlineStyle,
           sectionHeaderStyle: sectionHeaderStyle,
           bodyStyle: bodyStyle,
@@ -142,10 +158,11 @@ class ClassicoTemplate {
 
   static List<pw.Widget> _buildBody({
     required CvDocument document,
-    required ClassicoLabels labels,
+    required MinimalLabels labels,
     required LabelLocale locale,
     required DateFormat dateFormat,
     required pw.TextStyle nameStyle,
+    required pw.TextStyle contattiStyle,
     required pw.TextStyle headlineStyle,
     required pw.TextStyle sectionHeaderStyle,
     required pw.TextStyle bodyStyle,
@@ -159,9 +176,9 @@ class ClassicoTemplate {
         case AnagraficaSection(:final data):
           widgets.add(_anagraficaHeader(data, nameStyle, headlineStyle));
         case ContattiSection(:final data):
-          final row = _contattiRow(data, bodyStyle);
+          final row = _contattiRow(data, contattiStyle);
           if (row != null) widgets.add(row);
-          widgets.add(_hairline());
+          widgets.add(pw.SizedBox(height: 24));
         case SommarioSection(markdown: final summaryMarkdown):
           widgets.addAll(markdown.render(summaryMarkdown));
         case EsperienzeSection(:final items):
@@ -203,7 +220,7 @@ class ClassicoTemplate {
           widgets.addAll(_skillBlock(data, bodyStyle, markdown));
         case LingueSection(:final items):
           widgets.add(_sectionHeader(labels.lingue, sectionHeaderStyle));
-          widgets.add(_lingueTable(items, locale, bodyStyle));
+          widgets.add(_lingueColumn(items, locale, bodyStyle));
         case CertificazioniSection(:final items):
           widgets.addAll(
             _itemsSection(
@@ -238,14 +255,13 @@ class ClassicoTemplate {
       pw.Text('${data.nome} ${data.cognome}'.trim(), style: nameStyle),
       if ((data.headline ?? '').trim().isNotEmpty)
         pw.Padding(
-          padding: const pw.EdgeInsets.only(top: 2),
+          padding: const pw.EdgeInsets.only(top: 3),
           child: pw.Text(data.headline!.trim(), style: headlineStyle),
         ),
-      pw.SizedBox(height: 8),
     ],
   );
 
-  static pw.Widget? _contattiRow(ContattiData data, pw.TextStyle bodyStyle) {
+  static pw.Widget? _contattiRow(ContattiData data, pw.TextStyle style) {
     final parts = <String>[
       if ((data.email ?? '').trim().isNotEmpty) data.email!.trim(),
       if ((data.telefono ?? '').trim().isNotEmpty) data.telefono!.trim(),
@@ -255,28 +271,15 @@ class ClassicoTemplate {
     ];
     if (parts.isEmpty) return null;
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 8),
-      child: pw.Text(parts.join(' · '), style: bodyStyle),
+      padding: const pw.EdgeInsets.only(top: 3),
+      child: pw.Text(parts.join('   ·   '), style: style),
     );
   }
 
-  static pw.Widget _hairline() => pw.Container(
-    height: 0.5,
-    margin: const pw.EdgeInsets.only(bottom: 10),
-    color: _hairlineColor,
-  );
-
   static pw.Widget _sectionHeader(String title, pw.TextStyle style) =>
-      pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(top: 4, bottom: 2),
-            child: pw.Text(title.toUpperCase(), style: style),
-          ),
-          pw.Container(height: 0.5, color: _hairlineColor),
-          pw.SizedBox(height: 6),
-        ],
+      pw.Padding(
+        padding: const pw.EdgeInsets.only(top: 18, bottom: 8),
+        child: pw.Text(title.toUpperCase(), style: style),
       );
 
   static List<pw.Widget> _itemsSection<T>({
@@ -294,7 +297,7 @@ class ClassicoTemplate {
     EsperienzaItem it,
     LabelLocale locale,
     DateFormat dateFormat,
-    ClassicoLabels labels,
+    MinimalLabels labels,
     pw.TextStyle bodyStyle,
     pw.TextStyle metaStyle,
     MarkdownPdfRenderer markdown,
@@ -302,11 +305,9 @@ class ClassicoTemplate {
     final meta = [
       if ((it.luogo ?? '').trim().isNotEmpty) it.luogo!.trim(),
       if (it.modalita != null) modalitaLabel(it.modalita!, locale),
-      if (it.tipoContratto != null)
-        tipoContrattoLabel(it.tipoContratto!, locale),
     ].join(' · ');
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 10),
+      padding: const pw.EdgeInsets.only(bottom: 12),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
@@ -344,7 +345,7 @@ class ClassicoTemplate {
     FormazioneItem it,
     LabelLocale locale,
     DateFormat dateFormat,
-    ClassicoLabels labels,
+    MinimalLabels labels,
     pw.TextStyle bodyStyle,
     pw.TextStyle metaStyle,
     MarkdownPdfRenderer markdown,
@@ -352,10 +353,9 @@ class ClassicoTemplate {
     final meta = [
       if ((it.istituto ?? '').trim().isNotEmpty) it.istituto!.trim(),
       if ((it.luogo ?? '').trim().isNotEmpty) it.luogo!.trim(),
-      if ((it.voto ?? '').trim().isNotEmpty) it.voto!.trim(),
     ].join(' · ');
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 10),
+      padding: const pw.EdgeInsets.only(bottom: 12),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
@@ -404,7 +404,7 @@ class ClassicoTemplate {
       if ((it.codice ?? '').trim().isNotEmpty) it.codice!.trim(),
     ].join(' · ');
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 10),
+      padding: const pw.EdgeInsets.only(bottom: 12),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
@@ -433,63 +433,29 @@ class ClassicoTemplate {
       widgets.add(pw.SizedBox(height: 6));
     }
     if (data.tags.isNotEmpty) {
-      widgets.add(
-        pw.Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            for (final tag in data.tags)
-              pw.Container(
-                padding: const pw.EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: _hairlineColor, width: 0.5),
-                  borderRadius: const pw.BorderRadius.all(
-                    pw.Radius.circular(2),
-                  ),
-                ),
-                child: pw.Text(tag, style: bodyStyle),
-              ),
-          ],
-        ),
-      );
+      widgets.add(pw.Text(data.tags.join(' · '), style: bodyStyle));
     }
     return widgets;
   }
 
-  static pw.Widget _lingueTable(
+  static pw.Widget _lingueColumn(
     List<LinguaItem> items,
     LabelLocale locale,
     pw.TextStyle bodyStyle,
-  ) => pw.Table(
-    columnWidths: const {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(2)},
+  ) => pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
       for (final it in items)
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(
-            border: pw.Border(
-              bottom: pw.BorderSide(color: _hairlineColor, width: 0.5),
-            ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 4),
+          child: pw.Text(
+            [
+              '${it.lingua} — ${cefrLabel(it.livello, locale)}',
+              if ((it.certificazione ?? '').trim().isNotEmpty)
+                '(${it.certificazione!.trim()})',
+            ].join(' '),
+            style: bodyStyle,
           ),
-          children: [
-            pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(vertical: 4),
-              child: pw.Text(it.lingua, style: bodyStyle),
-            ),
-            pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(vertical: 4),
-              child: pw.Text(
-                [
-                  cefrLabel(it.livello, locale),
-                  if ((it.certificazione ?? '').trim().isNotEmpty)
-                    '(${it.certificazione!.trim()})',
-                ].join(' '),
-                style: bodyStyle,
-              ),
-            ),
-          ],
         ),
     ],
   );
