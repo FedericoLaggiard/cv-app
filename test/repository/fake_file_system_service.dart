@@ -14,6 +14,13 @@ class FakeFileSystemService implements FileSystemService {
   final Map<String, Uint8List> tmp = {};
 
   bool failNextRename = false;
+  bool failNextDelete = false;
+
+  /// Hook run (and awaited) right after [write] lands the file, before
+  /// returning — lets a test simulate a concurrent mutation racing this
+  /// write while it's still "in flight" from the repository's point of
+  /// view. Consumed once.
+  Future<void> Function()? onWriteBeforeComplete;
 
   @override
   Future<String> ensureLibraryDir() async => '/fake/library';
@@ -36,10 +43,19 @@ class FakeFileSystemService implements FileSystemService {
       throw StateError('simulated crash between write and rename');
     }
     files[id] = tmp.remove(id)!;
+    final hook = onWriteBeforeComplete;
+    if (hook != null) {
+      onWriteBeforeComplete = null;
+      await hook();
+    }
   }
 
   @override
   Future<void> delete(String id) async {
+    if (failNextDelete) {
+      failNextDelete = false;
+      throw StateError('simulated delete failure');
+    }
     files.remove(id);
     tmp.remove(id);
   }
