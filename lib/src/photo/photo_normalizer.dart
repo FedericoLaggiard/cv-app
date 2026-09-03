@@ -6,10 +6,25 @@
 /// qualità decrescente quando serve.
 library;
 
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 import 'package:meta/meta.dart';
+
+/// Decodifica un payload base64 dello store `assets` (già passato da
+/// [PhotoNormalizer.ingest], quindi sempre JPEG) in bytes utilizzabili.
+/// `null` su base64 corrotto: sia i template PDF sia la thumbnail
+/// dell'editor trattano un asset illeggibile come "nessuna foto" invece di
+/// far fallire il rendering — unica sorgente di verità per questa policy,
+/// prima duplicata fra `template_shared.dart` e `profile_photo_field.dart`.
+Uint8List? decodePhotoBase64(String data) {
+  try {
+    return base64Decode(data);
+  } catch (_) {
+    return null;
+  }
+}
 
 /// Dimensione massima (lato lungo) dopo il resize, in pixel.
 const int kMaxPhotoDimension = 800;
@@ -178,27 +193,29 @@ class PhotoNormalizer {
 
     final resized = _resize(decoded);
 
-    Uint8List? best;
+    // L'ultimo giro della matrice di qualità che siamo riusciti a produrre.
+    // Non è detto sia "il migliore": se nessun gradino sta sotto
+    // `kMaxPhotoBytes`, qui dentro finisce comunque il tentativo a Q=65,
+    // scartato — serve solo a riportarne la dimensione in
+    // `TooLargeAfterRetries`, non è mai il valore restituito all'uso.
+    Uint8List? lastAttempt;
     for (final quality in kPhotoQualityLadder) {
       final encoded = Uint8List.fromList(
         img.encodeJpg(resized, quality: quality),
       );
-      if (encoded.lengthInBytes <= kMaxPhotoBytes) {
-        best = encoded;
-        break;
-      }
-      best = encoded; // tieni l'ultimo tentativo per il messaggio d'errore
+      lastAttempt = encoded;
+      if (encoded.lengthInBytes <= kMaxPhotoBytes) break;
     }
 
-    if (best == null || best.lengthInBytes > kMaxPhotoBytes) {
-      throw TooLargeAfterRetries(best?.lengthInBytes ?? 0);
+    if (lastAttempt == null || lastAttempt.lengthInBytes > kMaxPhotoBytes) {
+      throw TooLargeAfterRetries(lastAttempt?.lengthInBytes ?? 0);
     }
 
     return NormalizedPhoto(
-      jpegBytes: best,
+      jpegBytes: lastAttempt,
       width: resized.width,
       height: resized.height,
-      sizeBytes: best.lengthInBytes,
+      sizeBytes: lastAttempt.lengthInBytes,
     );
   }
 

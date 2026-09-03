@@ -14,10 +14,12 @@
 library;
 
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
+import 'package:image_picker/image_picker.dart';
 
 import '../../../domain/asset.dart';
 import '../../../photo/photo_normalizer.dart';
@@ -28,6 +30,19 @@ class PickedPhotoFile {
   final Uint8List bytes;
   final String mimeType;
   const PickedPhotoFile(this.bytes, this.mimeType);
+}
+
+/// La fotocamera non è raggiungibile: permesso negato, nessun hardware, o
+/// altro errore di piattaforma segnalato da `image_picker`.
+///
+/// Distinto da [PhotoNormalizationError]: qui non ci sono ancora bytes da
+/// normalizzare, il fallimento è del picker stesso.
+class CameraUnavailableException implements Exception {
+  final String detail;
+  const CameraUnavailableException(this.detail);
+
+  @override
+  String toString() => 'CameraUnavailableException: $detail';
 }
 
 /// Picker di default: file system su tutte le piattaforme (su mobile il
@@ -66,15 +81,50 @@ const Map<String, String> _formatLabels = {
   'image/tiff': 'TIFF',
 };
 
+/// Scatto diretto (user story 2): `image_picker`, sorgente fotocamera.
+///
+/// Solo Android/iOS hanno una fotocamera di sistema che `image_picker`
+/// raggiunge senza configurazione aggiuntiva — su Web/macOS/Windows/Linux
+/// `ImageSource.camera` richiede un `cameraDelegate` custom (vedi
+/// [defaultCameraAvailable]), quindi lì il chiamante non deve nemmeno
+/// esporre questa funzione all'utente.
+Future<PickedPhotoFile?> defaultPickPhotoFromCamera() async {
+  final XFile? file;
+  try {
+    file = await ImagePicker().pickImage(source: ImageSource.camera);
+  } on PlatformException catch (e) {
+    throw CameraUnavailableException(e.message ?? e.code);
+  }
+  if (file == null) return null; // utente ha annullato lo scatto
+  final bytes = await file.readAsBytes();
+  final mimeType = file.mimeType ?? photoMimeTypeForFileName(file.name);
+  return PickedPhotoFile(bytes, mimeType);
+}
+
+/// True quando la piattaforma corrente ha una fotocamera di sistema
+/// raggiungibile senza `cameraDelegate` custom (ticket 26, user story 2:
+/// "da fotocamera (mobile) o da file system (tutte le piattaforme)").
+///
+/// `defaultTargetPlatform` invece di `dart:io Platform`: quest'ultimo non
+/// compila su Web, mentre `defaultTargetPlatform` è sicuro ovunque e
+/// riflette comunque il sistema operativo reale fuori dai test (dove è
+/// iniettabile per non dipendere dalla macchina che esegue la suite).
+bool defaultCameraAvailable() =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android);
+
 class ProfilePhotoField extends StatefulWidget {
-  const ProfilePhotoField({
+  ProfilePhotoField({
     super.key,
     required this.asset,
     required this.onPhotoSelected,
     required this.onRemove,
     this.normalizer = const PhotoNormalizer(),
     this.pickFile = defaultPickPhotoFile,
-  });
+    this.pickFromCamera = defaultPickPhotoFromCamera,
+    bool? cameraAvailable,
+  }) : cameraAvailable = cameraAvailable ?? defaultCameraAvailable();
 
   /// Foto profilo attuale, `null` se assente.
   final Asset? asset;
@@ -85,9 +135,18 @@ class ProfilePhotoField extends StatefulWidget {
   final VoidCallback onRemove;
 
   /// Iniettabili nei test — evitano di dipendere dal platform channel reale
-  /// di `file_picker`.
+  /// di `file_picker`/`image_picker`.
   final PhotoNormalizer normalizer;
   final Future<PickedPhotoFile?> Function() pickFile;
+  final Future<PickedPhotoFile?> Function() pickFromCamera;
+
+  /// Quando `true`, "Aggiungi foto"/"Cambia" apre un bottom sheet con la
+  /// scelta fra libreria e scatto diretto (user story 2); quando `false`
+  /// va dritto a [pickFile], come su desktop/web dove la fotocamera non è
+  /// raggiungibile (vedi [defaultCameraAvailable]). Non è `final` con
+  /// default costante perché dipende dalla piattaforma a runtime — da qui
+  /// il costruttore non più `const`.
+  final bool cameraAvailable;
 
   @override
   State<ProfilePhotoField> createState() => _ProfilePhotoFieldState();
@@ -97,13 +156,31 @@ class _ProfilePhotoFieldState extends State<ProfilePhotoField> {
   bool _busy = false;
   String? _error;
 
-  Future<void> _pickAndSet() async {
+  /// Tap su "Aggiungi foto"/"Cambia": senza fotocamera va dritto al file
+  /// picker (comportamento invariato su desktop/web); con fotocamera apre
+  /// il bottom sheet di scelta sorgente (user story 2).
+  Future<void> _handleTap() async {
+    if (!widget.cameraAvailable) {
+      await _pickAndSet(widget.pickFile);
+      return;
+    }
+    final source = await showModalBottomSheet<_PhotoSource>(
+      context: context,
+      builder: (_) => const _PhotoSourceSheet(),
+    );
+    if (source == null || !mounted) return; // utente ha chiuso il sheet
+    await _pickAndSet(
+      source == _PhotoSource.camera ? widget.pickFromCamera : widget.pickFile,
+    );
+  }
+
+  Future<void> _pickAndSet(Future<PickedPhotoFile?> Function() picker) async {
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      final picked = await widget.pickFile();
+      final picked = await picker();
       if (picked == null) return; // utente ha annullato il picker
       final normalized = await widget.normalizer.ingest(
         rawBytes: picked.bytes,
@@ -119,6 +196,13 @@ class _ProfilePhotoFieldState extends State<ProfilePhotoField> {
     } on PhotoNormalizationError catch (e) {
       if (!mounted) return;
       setState(() => _error = _messageFor(e));
+    } on CameraUnavailableException catch (_) {
+      if (!mounted) return;
+      setState(
+        () => _error =
+            'Fotocamera non disponibile. Controlla i permessi nelle '
+            'impostazioni del dispositivo.',
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -154,7 +238,7 @@ class _ProfilePhotoFieldState extends State<ProfilePhotoField> {
               if (asset == null)
                 OutlinedButton.icon(
                   key: const Key('profile_photo_add'),
-                  onPressed: _busy ? null : _pickAndSet,
+                  onPressed: _busy ? null : _handleTap,
                   icon: const Icon(Icons.add_a_photo_outlined),
                   label: const Text('Aggiungi foto'),
                 )
@@ -164,7 +248,7 @@ class _ProfilePhotoFieldState extends State<ProfilePhotoField> {
                   children: [
                     OutlinedButton(
                       key: const Key('profile_photo_change'),
-                      onPressed: _busy ? null : _pickAndSet,
+                      onPressed: _busy ? null : _handleTap,
                       child: const Text('Cambia'),
                     ),
                     OutlinedButton(
@@ -223,12 +307,7 @@ class _Thumbnail extends StatelessWidget {
         ),
       );
     }
-    Uint8List? bytes;
-    try {
-      bytes = base64Decode(current.data);
-    } catch (_) {
-      bytes = null;
-    }
+    final bytes = decodePhotoBase64(current.data);
     if (bytes == null) {
       return CircleAvatar(
         key: const Key('profile_photo_broken'),
@@ -244,6 +323,37 @@ class _Thumbnail extends StatelessWidget {
       key: const Key('profile_photo_thumbnail'),
       radius: size / 2,
       backgroundImage: MemoryImage(bytes),
+    );
+  }
+}
+
+enum _PhotoSource { gallery, camera }
+
+/// Bottom sheet "libreria o fotocamera" (user story 2), mostrato solo
+/// quando [ProfilePhotoField.cameraAvailable] è vero.
+class _PhotoSourceSheet extends StatelessWidget {
+  const _PhotoSourceSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            key: const Key('profile_photo_source_gallery'),
+            leading: const Icon(Icons.photo_library_outlined),
+            title: const Text('Scegli dalla libreria'),
+            onTap: () => Navigator.of(context).pop(_PhotoSource.gallery),
+          ),
+          ListTile(
+            key: const Key('profile_photo_source_camera'),
+            leading: const Icon(Icons.photo_camera_outlined),
+            title: const Text('Scatta una foto'),
+            onTap: () => Navigator.of(context).pop(_PhotoSource.camera),
+          ),
+        ],
+      ),
     );
   }
 }

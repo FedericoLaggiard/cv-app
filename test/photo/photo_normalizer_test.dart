@@ -1,6 +1,7 @@
 /// Unit test su `PhotoNormalizer.ingest` (ticket 26, Testing Decisions).
 library;
 
+import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -116,6 +117,17 @@ void main() {
       );
     },
   );
+
+  group('decodePhotoBase64', () {
+    test('decodifica un base64 valido', () {
+      final bytes = _solidPng(2, 2);
+      expect(decodePhotoBase64(base64Encode(bytes)), equals(bytes));
+    });
+
+    test('null su base64 corrotto, invece di lanciare', () {
+      expect(decodePhotoBase64('non è base64!!'), isNull);
+    });
+  });
 
   group('photoMimeTypeForFileName', () {
     test('mappa le estensioni accettate', () {
