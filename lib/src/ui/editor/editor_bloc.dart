@@ -19,6 +19,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/asset.dart';
 import '../../domain/cv_document.dart';
 import '../../domain/cv_section.dart';
 import '../../domain/enums.dart';
@@ -220,6 +221,23 @@ class SectionExpanded extends EditorEvent {
   const SectionExpanded(this.index);
 }
 
+/// Imposta ([asset] non nullo) o rimuove ([asset] `null`) la foto profilo
+/// della sezione Anagrafica all'indice [index] (ticket 26).
+///
+/// Evento dedicato perché la foto vive in due posti che vanno aggiornati
+/// insieme: il payload nello store `assets` del documento e l'`AssetRef`
+/// dentro `AnagraficaData.foto`. [SectionAtIndexReplaced] tocca solo la
+/// sezione e lascerebbe l'asset orfano o il ref pendente.
+///
+/// L'asset precedente non viene rimosso qui: resta nello store finché la
+/// save non lo raccoglie con `garbageCollectAssets`, che lo elimina perché
+/// non più referenziato (ticket 04/09).
+class AnagraficaPhotoSet extends EditorEvent {
+  final int index;
+  final Asset? asset;
+  const AnagraficaPhotoSet(this.index, this.asset);
+}
+
 class SaveRetryRequested extends EditorEvent {
   const SaveRetryRequested();
 }
@@ -266,6 +284,7 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
     on<SectionCollapseToggled>(_onCollapseToggled);
     on<AllSectionsCollapseSet>(_onAllCollapseSet);
     on<SectionExpanded>(_onSectionExpanded);
+    on<AnagraficaPhotoSet>(_onAnagraficaPhotoSet);
     on<SaveRetryRequested>(_onSaveRetry);
     on<_AutoSaveFired>(_onAutoSaveFired);
   }
@@ -361,6 +380,31 @@ class EditorBloc extends Bloc<EditorEvent, EditorState> {
       final next = [...d.sections];
       next[e.index] = e.newSection;
       return d.copyWith(sections: next);
+    });
+  }
+
+  void _onAnagraficaPhotoSet(
+      AnagraficaPhotoSet e, Emitter<EditorState> emit) {
+    _mutate(emit, (d) {
+      if (e.index < 0 || e.index >= d.sections.length) return d;
+      final section = d.sections[e.index];
+      if (section is! AnagraficaSection) return d;
+
+      final asset = e.asset;
+      final next = [...d.sections];
+      if (asset == null) {
+        next[e.index] =
+            section.copyWith(data: section.data.copyWith(foto: null));
+        return d.copyWith(sections: next);
+      }
+
+      final assetId = _uuid.v4();
+      next[e.index] =
+          section.copyWith(data: section.data.copyWith(foto: AssetRef(assetId)));
+      return d.copyWith(
+        sections: next,
+        assets: {...d.assets, assetId: asset},
+      );
     });
   }
 

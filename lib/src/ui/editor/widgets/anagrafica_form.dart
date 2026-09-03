@@ -4,10 +4,12 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../domain/asset.dart';
 import '../../../domain/cv_section.dart';
 import '../../../domain/enums.dart';
 import '../editor_bloc.dart';
 import 'editable_text_field.dart';
+import 'profile_photo_field.dart';
 
 class AnagraficaForm extends StatelessWidget {
   const AnagraficaForm({
@@ -36,6 +38,16 @@ class AnagraficaForm extends StatelessWidget {
         for (final m in s.missing.fields)
           if (m.sectionIndex == index && m.itemId == null) m.field,
       };
+    });
+
+    // La foto profilo sta nello store `assets` del documento (ticket 09):
+    // la sezione ne tiene solo l'`AssetRef`, quindi il payload va risolto
+    // qui e passato al widget, che resta presentazionale.
+    final photoAsset = context.select<EditorBloc, Asset?>((b) {
+      final s = b.state;
+      final ref = section.data.foto;
+      if (s is! EditorReady || ref == null) return null;
+      return s.document.assets[ref.assetId];
     });
 
     Widget row(List<Widget> children) => Padding(
@@ -120,15 +132,14 @@ class AnagraficaForm extends StatelessWidget {
                 (d) => d.copyWith(codiceFiscale: v.isEmpty ? null : v)),
           ),
         ]),
-        Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Text(
-            'Foto profilo: disponibile presto.',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(fontStyle: FontStyle.italic),
-          ),
+        ProfilePhotoField(
+          asset: photoAsset,
+          onPhotoSelected: (asset) => context
+              .read<EditorBloc>()
+              .add(AnagraficaPhotoSet(index, asset)),
+          onRemove: () => context
+              .read<EditorBloc>()
+              .add(AnagraficaPhotoSet(index, null)),
         ),
       ],
     );

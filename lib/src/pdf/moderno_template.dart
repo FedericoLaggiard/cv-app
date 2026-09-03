@@ -22,7 +22,6 @@
 /// story 6).
 library;
 
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
@@ -173,7 +172,7 @@ class ModernoTemplate {
         ? const <CvSection>[]
         : mainSections.sublist(1);
 
-    final photoBytes = _photoBytes(document, anagrafica);
+    final photoBytes = photoBytesFor(document, anagrafica);
 
     doc.addPage(
       pw.MultiPage(
@@ -284,21 +283,6 @@ class ModernoTemplate {
     }
 
     return doc;
-  }
-
-  static Uint8List? _photoBytes(
-    CvDocument document,
-    AnagraficaSection? anagrafica,
-  ) {
-    final ref = anagrafica?.data.foto;
-    if (ref == null) return null;
-    final asset = document.assets[ref.assetId];
-    if (asset == null) return null;
-    try {
-      return base64Decode(asset.data);
-    } catch (_) {
-      return null;
-    }
   }
 
   static pw.Widget _band({

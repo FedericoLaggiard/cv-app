@@ -1,9 +1,12 @@
 /// Template PDF "Classico" (ticket 08/24) — audience ATS/formale.
 ///
 /// Singola colonna full-width, EB Garamond, palette solo neri/grigi.
-/// Foto profilo fuori scope in questa slice (Slice G, ticket 24 "Out of
-/// Scope"): l'header si espande sempre a piena larghezza.
+/// Foto profilo opzionale (Slice G, ticket 26): un rettangolo 28×36mm in
+/// alto a destra dell'header quando presente; senza foto l'header resta
+/// full-width com'era prima del ticket 26.
 library;
+
+import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -157,7 +160,14 @@ class ClassicoTemplate {
     for (final section in document.sections) {
       switch (section) {
         case AnagraficaSection(:final data):
-          widgets.add(_anagraficaHeader(data, nameStyle, headlineStyle));
+          widgets.add(
+            _anagraficaHeader(
+              data,
+              photoBytesFor(document, section),
+              nameStyle,
+              headlineStyle,
+            ),
+          );
         case ContattiSection(:final data):
           final row = _contattiRow(data, bodyStyle);
           if (row != null) widgets.add(row);
@@ -230,19 +240,55 @@ class ClassicoTemplate {
 
   static pw.Widget _anagraficaHeader(
     AnagraficaData data,
+    Uint8List? photoBytes,
     pw.TextStyle nameStyle,
     pw.TextStyle headlineStyle,
-  ) => pw.Column(
-    crossAxisAlignment: pw.CrossAxisAlignment.start,
-    children: [
-      pw.Text('${data.nome} ${data.cognome}'.trim(), style: nameStyle),
-      if ((data.headline ?? '').trim().isNotEmpty)
-        pw.Padding(
-          padding: const pw.EdgeInsets.only(top: 2),
-          child: pw.Text(data.headline!.trim(), style: headlineStyle),
+  ) {
+    final nameBlock = pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text('${data.nome} ${data.cognome}'.trim(), style: nameStyle),
+        if ((data.headline ?? '').trim().isNotEmpty)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 2),
+            child: pw.Text(data.headline!.trim(), style: headlineStyle),
+          ),
+      ],
+    );
+
+    if (photoBytes == null) {
+      return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [nameBlock, pw.SizedBox(height: 8)],
+      );
+    }
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(child: nameBlock),
+            pw.SizedBox(width: 12),
+            _photo(photoBytes),
+          ],
         ),
-      pw.SizedBox(height: 8),
-    ],
+        pw.SizedBox(height: 8),
+      ],
+    );
+  }
+
+  static pw.Widget _photo(Uint8List bytes) => pw.Container(
+    width: 28 * PdfPageFormat.mm,
+    height: 36 * PdfPageFormat.mm,
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(color: _hairlineColor, width: 0.5),
+      image: pw.DecorationImage(
+        image: pw.MemoryImage(bytes),
+        fit: pw.BoxFit.cover,
+      ),
+    ),
   );
 
   static pw.Widget? _contattiRow(ContattiData data, pw.TextStyle bodyStyle) {

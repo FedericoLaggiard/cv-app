@@ -5,6 +5,7 @@ library;
 
 import 'dart:io';
 
+import 'package:cv_app/src/domain/asset.dart';
 import 'package:cv_app/src/domain/cv_document.dart';
 import 'package:cv_app/src/domain/cv_section.dart';
 import 'package:cv_app/src/domain/enums.dart';
@@ -31,20 +32,28 @@ Future<ClassicoFonts> _testFonts() async => ClassicoFonts(
   boldItalic: await _loadFont('EBGaramond-BoldItalic.ttf'),
 );
 
-CvDocument _seedDocument({List<CvSection>? sections}) => CvDocument(
+const _tinyPngBase64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
+CvDocument _seedDocument({List<CvSection>? sections, bool withPhoto = false}) =>
+    CvDocument(
   id: 'doc-1',
   createdAt: DateTime.utc(2026, 1, 1),
   updatedAt: DateTime.utc(2026, 1, 1),
   variantName: 'Backend Senior IT',
+  assets: withPhoto
+      ? {'photo-1': const Asset(mimeType: 'image/png', data: _tinyPngBase64)}
+      : const {},
   sections:
       sections ??
       [
-        const AnagraficaSection(
+        AnagraficaSection(
           displayTitle: 'Anagrafica',
           data: AnagraficaData(
             nome: 'Mario',
             cognome: 'Rossi',
             headline: 'Senior Backend Engineer',
+            foto: withPhoto ? const AssetRef('photo-1') : null,
           ),
         ),
         ContattiSection(
@@ -116,6 +125,19 @@ void main() {
       document: _seedDocument(),
       labels: labelsFor(LabelLocale.en),
       locale: LabelLocale.en,
+      fonts: fonts,
+    );
+    final bytes = await doc.save();
+    expect(bytes, isNotEmpty);
+    expect(hasPdfMagicBytes(bytes), isTrue);
+  });
+
+  test('produce un PDF non vuoto con magic bytes %PDF, con foto', () async {
+    final fonts = await _testFonts();
+    final doc = ClassicoTemplate.render(
+      document: _seedDocument(withPhoto: true),
+      labels: labelsFor(LabelLocale.it),
+      locale: LabelLocale.it,
       fonts: fonts,
     );
     final bytes = await doc.save();
