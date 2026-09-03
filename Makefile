@@ -25,10 +25,10 @@ test:
 
 complexity:
 	@mkdir -p $(REPORT_DIR)
-	dart run dart_code_linter:metrics analyze lib/src/domain lib/src/repository \
+	dart run dart_code_linter:metrics analyze lib/src/domain lib/src/repository lib/src/photo \
 		--cyclomatic-complexity=10 --maximum-nesting-level=5 \
 		--set-exit-on-violation-level=warning \
-		--json-path=$(REPORT_DIR)/complexity-domain-repository.json
+		--json-path=$(REPORT_DIR)/complexity-core.json
 	dart run dart_code_linter:metrics analyze lib/src/ui lib/src/app \
 		--cyclomatic-complexity=20 --maximum-nesting-level=5 \
 		--set-exit-on-violation-level=warning \

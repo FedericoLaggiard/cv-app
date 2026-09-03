@@ -44,12 +44,17 @@ sealed class PhotoNormalizationError implements Exception {
 
 /// Formato non supportato (HEIC/GIF/SVG/BMP/TIFF/altro), rifiutato prima
 /// del decode.
+///
+/// Porta il [mimeType] rilevato, non una frase pronta: la copy utente la
+/// compone il widget, così questo seam non possiede stringhe di
+/// presentazione (e la i18n della Slice J avrà un dato su cui lavorare
+/// invece di un messaggio già tradotto).
 class RejectedFormat extends PhotoNormalizationError {
-  final String detail;
-  const RejectedFormat(this.detail);
+  final String mimeType;
+  const RejectedFormat(this.mimeType);
 
   @override
-  String toString() => 'RejectedFormat: $detail';
+  String toString() => 'RejectedFormat: $mimeType';
 }
 
 /// Bytes che dichiarano un mime accettato ma non sono un'immagine
@@ -78,6 +83,34 @@ const Set<String> kAcceptedPhotoMimeTypes = {
   'image/png',
   'image/webp',
 };
+
+/// Mime dedotto dall'estensione di [fileName].
+///
+/// Mappa anche i formati *non* accettati che l'utente può realisticamente
+/// scegliere (HEIC dalla libreria iOS, GIF, SVG, BMP, TIFF): serve a farli
+/// arrivare al rifiuto con un nome vero invece che come
+/// `application/octet-stream`, così il messaggio può dire *quale* formato ha
+/// scelto (ticket 26, user story 5). Estensione assente o sconosciuta →
+/// `application/octet-stream`, e tocca ai magic bytes
+/// ([sniffPhotoMimeType]) l'ultima parola.
+String photoMimeTypeForFileName(String fileName) {
+  final dot = fileName.lastIndexOf('.');
+  final extension = dot < 0 || dot == fileName.length - 1
+      ? null
+      : fileName.substring(dot + 1).toLowerCase();
+  return switch (extension) {
+    'jpg' || 'jpeg' => 'image/jpeg',
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    'heic' => 'image/heic',
+    'heif' => 'image/heif',
+    'gif' => 'image/gif',
+    'svg' => 'image/svg+xml',
+    'bmp' => 'image/bmp',
+    'tif' || 'tiff' => 'image/tiff',
+    _ => 'application/octet-stream',
+  };
+}
 
 /// Riconosce il mime dai magic bytes, per i soli formati accettati.
 ///
@@ -126,9 +159,7 @@ class PhotoNormalizer {
   }) async {
     final normalizedMime = mimeType.toLowerCase().trim();
     if (!kAcceptedPhotoMimeTypes.contains(normalizedMime)) {
-      throw RejectedFormat(
-        'Formato non supportato ($normalizedMime). Usa JPG, PNG o WebP.',
-      );
+      throw RejectedFormat(normalizedMime);
     }
 
     img.Image? decoded;

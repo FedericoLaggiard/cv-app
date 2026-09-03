@@ -1,11 +1,15 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:cv_app/src/domain/asset.dart';
 import 'package:cv_app/src/domain/cv_document.dart';
+import 'package:cv_app/src/domain/cv_section.dart';
 import 'package:cv_app/src/domain/json_codec.dart';
+import 'package:cv_app/src/photo/photo_normalizer.dart';
 import 'package:cv_app/src/repository/cv_repository.dart';
 import 'package:cv_app/src/repository/path_provider_cv_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 
 import 'fake_file_system_service.dart';
 
@@ -291,6 +295,112 @@ void main() {
       final parsed = CvDocumentCodec.fromJsonString(utf8.decode(bytes));
       expect(parsed.id, doc.id);
       expect(parsed.variantName, 'Round');
+    });
+  });
+
+  // Ticket 26, user story 11 + Testing Decisions ("contract test
+  // portabilità"): è la verifica che giustifica l'intera Slice G — la foto
+  // sopravvive al giro completo normalizza → salva → esporta → importa su
+  // un'altra installazione, e il `.cvapp` è davvero autocontenuto.
+  group('portabilità foto profilo (ticket 26)', () {
+    test('export → import su una nuova install restituisce la foto '
+        'identica byte-per-byte', () async {
+      // 1. Foto vera, passata dalla pipeline di normalizzazione reale.
+      final source = img.Image(width: 1200, height: 900, numChannels: 3);
+      img.fill(source, color: img.ColorRgb8(0x20, 0x60, 0xa0));
+      final normalized = await const PhotoNormalizer().ingest(
+        rawBytes: Uint8List.fromList(img.encodePng(source)),
+        mimeType: 'image/png',
+      );
+
+      // 2. Installazione A: variante con la foto nello store `assets`.
+      final repoA = _repo(FakeFileSystemService());
+      final created = await repoA.create(initialVariantName: 'Con foto');
+      const assetId = 'photo-1';
+      await repoA.save(created.copyWith(
+        sections: [
+          const AnagraficaSection(
+            displayTitle: 'Anagrafica',
+            data: AnagraficaData(
+              nome: 'Mario',
+              cognome: 'Rossi',
+              foto: AssetRef(assetId),
+            ),
+          ),
+        ],
+        assets: {
+          assetId: Asset(
+            mimeType: 'image/jpeg',
+            data: base64Encode(normalized.jpegBytes),
+          ),
+        },
+      ));
+
+      // La GC al save non deve aver buttato l'asset: è referenziato.
+      final saved = await repoA.watch(created.id).first;
+      expect(saved.assets, contains(assetId));
+
+      final exported = await repoA.exportToBytes(created.id);
+
+      // Il `.cvapp` è autocontenuto: i bytes della foto viaggiano dentro
+      // il file, non come path verso qualcosa che resterebbe a casa.
+      expect(
+        utf8.decode(exported),
+        contains(base64Encode(normalized.jpegBytes)),
+      );
+
+      // 3. Installazione B: file system separato, nessuna variante.
+      final repoB = _repo(FakeFileSystemService());
+      final result = await repoB.importFromBytes(exported);
+      expect(result, isA<ImportSuccess>());
+
+      // 4. La foto è tornata identica, byte per byte.
+      final imported = (result as ImportSuccess).doc;
+      final importedAsset = imported.assets[assetId];
+      expect(importedAsset, isNotNull);
+      expect(importedAsset!.mimeType, 'image/jpeg');
+      expect(base64Decode(importedAsset.data), equals(normalized.jpegBytes));
+      expect(
+        (imported.sections.single as AnagraficaSection).data.foto?.assetId,
+        assetId,
+      );
+    });
+
+    test('rimuovere il riferimento e salvare fa sparire la foto '
+        "dall'export (GC)", () async {
+      final repo = _repo(FakeFileSystemService());
+      final created = await repo.create(initialVariantName: 'Senza foto');
+      const assetId = 'photo-1';
+      const asset = Asset(mimeType: 'image/jpeg', data: 'Zm9v');
+
+      await repo.save(created.copyWith(
+        sections: [
+          const AnagraficaSection(
+            displayTitle: 'Anagrafica',
+            data: AnagraficaData(
+              nome: 'Mario',
+              cognome: 'Rossi',
+              foto: AssetRef(assetId),
+            ),
+          ),
+        ],
+        assets: const {assetId: asset},
+      ));
+
+      final withPhoto = await repo.watch(created.id).first;
+      await repo.save(withPhoto.copyWith(
+        sections: [
+          const AnagraficaSection(
+            displayTitle: 'Anagrafica',
+            data: AnagraficaData(nome: 'Mario', cognome: 'Rossi'),
+          ),
+        ],
+      ));
+
+      final exported = utf8.decode(await repo.exportToBytes(created.id));
+      expect(exported, isNot(contains('Zm9v')));
+      final parsed = CvDocumentCodec.fromJsonString(exported);
+      expect(parsed.assets, isEmpty);
     });
   });
 }

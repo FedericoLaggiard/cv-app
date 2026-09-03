@@ -131,9 +131,34 @@ void main() {
       await _settle(tester);
 
       expect(find.byKey(const Key('profile_photo_error')), findsOneWidget);
-      expect(find.textContaining('JPG, PNG o WebP'), findsOneWidget);
+      // Il messaggio nomina il formato scelto, non il mime type grezzo.
+      expect(
+        find.text('Formato HEIC non supportato. Usa JPG, PNG o WebP.'),
+        findsOneWidget,
+      );
       expect(selected, isNull);
       expect(find.byKey(const Key('profile_photo_add')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'formato ignoto: messaggio generico, nessun mime type in faccia',
+    (tester) async {
+      await tester.pumpWidget(
+        _harness(
+          pickFile: () async =>
+              PickedPhotoFile(Uint8List(0), 'application/octet-stream'),
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('profile_photo_add')));
+      await _settle(tester);
+
+      expect(
+        find.text('Formato non supportato. Usa JPG, PNG o WebP.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('octet-stream'), findsNothing);
     },
   );
 

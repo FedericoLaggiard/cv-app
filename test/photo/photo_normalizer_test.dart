@@ -117,6 +117,31 @@ void main() {
     },
   );
 
+  group('photoMimeTypeForFileName', () {
+    test('mappa le estensioni accettate', () {
+      expect(photoMimeTypeForFileName('foto.jpg'), 'image/jpeg');
+      expect(photoMimeTypeForFileName('foto.JPEG'), 'image/jpeg');
+      expect(photoMimeTypeForFileName('foto.png'), 'image/png');
+      expect(photoMimeTypeForFileName('foto.webp'), 'image/webp');
+    });
+
+    test('dà un nome vero anche ai formati rifiutati (user story 5)', () {
+      // Senza questa mappa il rifiuto direbbe "application/octet-stream"
+      // proprio nel caso che la story nomina.
+      expect(photoMimeTypeForFileName('IMG_0042.HEIC'), 'image/heic');
+      expect(photoMimeTypeForFileName('anim.gif'), 'image/gif');
+      expect(photoMimeTypeForFileName('logo.svg'), 'image/svg+xml');
+      expect(photoMimeTypeForFileName('scan.tiff'), 'image/tiff');
+      expect(photoMimeTypeForFileName('old.bmp'), 'image/bmp');
+    });
+
+    test('estensione assente o sconosciuta → octet-stream', () {
+      expect(photoMimeTypeForFileName('foto'), 'application/octet-stream');
+      expect(photoMimeTypeForFileName('foto.'), 'application/octet-stream');
+      expect(photoMimeTypeForFileName('foto.xyz'), 'application/octet-stream');
+    });
+  });
+
   group('sniffPhotoMimeType', () {
     test('riconosce JPEG, PNG e WebP dai magic bytes', () {
       expect(sniffPhotoMimeType(_solidJpeg(8, 8)), 'image/jpeg');

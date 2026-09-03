@@ -47,26 +47,24 @@ Future<PickedPhotoFile?> defaultPickPhotoFile() async {
   // Mime dal nome file quando è riconoscibile, altrimenti magic bytes
   // (ticket 26, "Rilevamento mime"): un file senza estensione che è
   // davvero un JPEG deve passare.
-  final byName = _mimeTypeForExtension(_extensionOf(file.name));
+  final byName = photoMimeTypeForFileName(file.name);
   final mimeType = kAcceptedPhotoMimeTypes.contains(byName)
       ? byName
       : (sniffPhotoMimeType(bytes) ?? byName);
   return PickedPhotoFile(bytes, mimeType);
 }
 
-String? _extensionOf(String name) {
-  final dot = name.lastIndexOf('.');
-  if (dot < 0 || dot == name.length - 1) return null;
-  return name.substring(dot + 1);
-}
-
-String _mimeTypeForExtension(String? extension) =>
-    switch (extension?.toLowerCase()) {
-      'jpg' || 'jpeg' => 'image/jpeg',
-      'png' => 'image/png',
-      'webp' => 'image/webp',
-      _ => 'application/octet-stream',
-    };
+/// Nome leggibile dei formati che l'utente può scegliere ma non sono
+/// supportati, per dirgli *quale* formato ha scelto invece di sputargli
+/// addosso un mime type (ticket 26, user story 5).
+const Map<String, String> _formatLabels = {
+  'image/heic': 'HEIC',
+  'image/heif': 'HEIF',
+  'image/gif': 'GIF',
+  'image/svg+xml': 'SVG',
+  'image/bmp': 'BMP',
+  'image/tiff': 'TIFF',
+};
 
 class ProfilePhotoField extends StatefulWidget {
   const ProfilePhotoField({
@@ -127,7 +125,13 @@ class _ProfilePhotoFieldState extends State<ProfilePhotoField> {
   }
 
   String _messageFor(PhotoNormalizationError e) => switch (e) {
-    RejectedFormat(:final detail) => detail,
+    RejectedFormat(:final mimeType) => switch (_formatLabels[mimeType]) {
+      final label? => 'Formato $label non supportato. Usa JPG, PNG o WebP.',
+      // Estensione sconosciuta e magic bytes non riconosciuti: non abbiamo
+      // un nome onesto da dare al formato, meglio tacerlo che stampare
+      // `application/octet-stream`.
+      null => 'Formato non supportato. Usa JPG, PNG o WebP.',
+    },
     UndecodableFile() =>
       'Il file scelto non è un\'immagine leggibile. Prova un altro file.',
     TooLargeAfterRetries() =>
