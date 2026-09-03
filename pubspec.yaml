@@ -56,6 +56,7 @@ dependencies:
   flutter_markdown_plus: ^1.0.12    # preview Markdown (MIT)
   intl: ^0.20.2                     # date formatting per template PDF (BSD-3-Clause)
   shared_preferences: ^2.5.2        # ui_locale, onboarding_completed (BSD-3-Clause)
+  image: ^4.9.0                     # resize/encode foto profilo (ticket 26, Apache-2.0/BSD-MIT)
 
   # Markdown editor WYSIWYG. Il ticket 06 raccomandava la versione GitHub
   # perche' la release pub.dev era vecchia; usiamo invece le dev release
@@ -81,13 +82,6 @@ dev_dependencies:
 
   # BLoC unit-test helpers (companion a flutter_bloc).
   bloc_test: ^10.0.0
-
-  # Rasterizzazione PNG per tool/generate_thumbnails.dart (ticket 25):
-  # niente dipendenza runtime dell'app, solo lo script offline che genera
-  # gli asset in assets/template_thumbnails/. Già presente transitivamente
-  # nel lockfile (via altre dipendenze), qui pinnata esplicitamente perché
-  # usata direttamente da codice del repo.
-  image: ^4.9.0
 
   # E2E testing pilotato via Patrol (amendment ticket 17).
   # patrol_cli e' un tool a se stante, si installa con

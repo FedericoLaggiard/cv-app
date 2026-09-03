@@ -6,12 +6,34 @@
 /// per avere una sola sorgente di verità.
 library;
 
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../domain/cv_document.dart';
+import '../domain/cv_section.dart';
 import '../domain/enums.dart';
 import '../domain/year_month.dart';
 import 'label_locale.dart';
+
+/// Decodifica i bytes della foto profilo (Slice G, ticket 26) referenziata
+/// da [anagrafica]`.data.foto` nello store `assets` di [document].
+/// `null` quando assente, o quando il riferimento/asset non è risolvibile
+/// (asset mancante, base64 corrotto) — i template trattano questi casi
+/// come "nessuna foto" invece di far fallire l'export.
+Uint8List? photoBytesFor(CvDocument document, AnagraficaSection? anagrafica) {
+  final ref = anagrafica?.data.foto;
+  if (ref == null) return null;
+  final asset = document.assets[ref.assetId];
+  if (asset == null) return null;
+  try {
+    return base64Decode(asset.data);
+  } catch (_) {
+    return null;
+  }
+}
 
 extension YearMonthPdf on YearMonth {
   DateTime toDateTime() => DateTime(year, month);

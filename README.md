@@ -64,8 +64,9 @@ Questa iterazione copre i tickets 01→04, 07 e 14:
     complessità); `pre-push` è vuoto.
   - `flutter analyze --fatal-infos --fatal-warnings`, tolleranza zero.
   - Complessità ciclomatica via `dart_code_linter`: CC 10 / nesting 5 su
-    `lib/src/domain/` e `lib/src/repository/`, CC 20 / nesting 5 su
-    `lib/src/ui/` e `lib/src/app/`; nessuna esclusione oltre ai generati.
+    `lib/src/domain/`, `lib/src/repository/` e `lib/src/photo/`, CC 20 /
+    nesting 5 su `lib/src/ui/` e `lib/src/app/`. Resta fuori dal gate solo
+    `lib/src/pdf/` (oltre ai generati).
   - `check-registry` blocca un `pubspec.lock` che punta a un registry
     diverso da pub.dev.
   - Bypass: `git commit --no-verify`.

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cv_app/src/domain/asset.dart';
 import 'package:cv_app/src/domain/cv_document.dart';
 import 'package:cv_app/src/domain/cv_section.dart';
 import 'package:cv_app/src/domain/enums.dart';
@@ -310,6 +311,77 @@ void main() {
 
       await bloc.close();
     });
+  });
+
+  group('EditorBloc — AnagraficaPhotoSet (ticket 26)', () {
+    test(
+      'imposta un asset nuovo e lo referenzia da AnagraficaData.foto',
+      () async {
+        final repo = InMemoryCvRepository();
+        final id = await _seedVariant(repo);
+        final bloc = EditorBloc(repository: repo, debounce: _testDebounce);
+        bloc.add(EditorStarted(id));
+        await _pumpEventLoop();
+        bloc.add(const SectionAdded.fixed(SectionKind.anagrafica));
+        await _pumpEventLoop();
+
+        const asset = Asset(mimeType: 'image/jpeg', data: 'Zm9v');
+        bloc.add(const AnagraficaPhotoSet(0, asset));
+        await _pumpEventLoop();
+
+        final s = bloc.state as EditorReady;
+        final section = s.document.sections[0] as AnagraficaSection;
+        final assetId = section.data.foto?.assetId;
+        expect(assetId, isNotNull);
+        expect(s.document.assets[assetId], asset);
+        expect(s.dirty, isTrue);
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'asset null rimuove il riferimento; la save successiva fa il GC '
+      "dell'asset ormai orfano",
+      () async {
+        final repo = InMemoryCvRepository();
+        final id = await _seedVariant(repo);
+        final bloc = EditorBloc(repository: repo, debounce: _testDebounce);
+        bloc.add(EditorStarted(id));
+        await _pumpEventLoop();
+        bloc.add(const SectionAdded.fixed(SectionKind.anagrafica));
+        await _pumpEventLoop();
+
+        const asset = Asset(mimeType: 'image/jpeg', data: 'Zm9v');
+        bloc.add(const AnagraficaPhotoSet(0, asset));
+        await _pumpEventLoop();
+        final assetId =
+            ((bloc.state as EditorReady).document.sections[0]
+                    as AnagraficaSection)
+                .data
+                .foto!
+                .assetId;
+
+        bloc.add(const AnagraficaPhotoSet(0, null));
+        await _pumpEventLoop();
+
+        var s = bloc.state as EditorReady;
+        expect(
+          (s.document.sections[0] as AnagraficaSection).data.foto,
+          isNull,
+        );
+        // Il GC scatta nel repo alla save, non subito in memoria.
+        expect(s.document.assets[assetId], asset);
+
+        await Future<void>.delayed(_testDebounce * 3);
+        await _pumpEventLoop();
+
+        final saved = await repo.watch(id).first;
+        expect(saved.assets.containsKey(assetId), isFalse);
+
+        await bloc.close();
+      },
+    );
   });
 
   group('EditorBloc — errori di save', () {
