@@ -246,10 +246,7 @@ class _EditorTopBar extends StatelessWidget implements PreferredSizeWidget {
           key: const Key('editor_preview_pdf'),
           tooltip: 'Anteprima PDF',
           icon: const Icon(Icons.visibility_outlined),
-          onPressed: () => (onPreview ??
-              (String id) => context.push('/editor/$id/preview'))(
-            state.document.id,
-          ),
+          onPressed: () => _handlePreview(context, state, onPreview),
         ),
         IconButton(
           key: const Key('editor_export_pdf'),
@@ -267,6 +264,18 @@ class _EditorTopBar extends StatelessWidget implements PreferredSizeWidget {
         const SizedBox(width: 12),
       ],
     );
+  }
+}
+
+void _handlePreview(
+  BuildContext context,
+  EditorReady state,
+  ValueChanged<String>? onPreview,
+) {
+  if (onPreview != null) {
+    onPreview(state.document.id);
+  } else {
+    context.push('/editor/${state.document.id}/preview');
   }
 }
 

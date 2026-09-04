@@ -76,30 +76,41 @@ class _PreviewView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PreviewCubit, PreviewState>(
-      builder: (context, state) => switch (state) {
-        PreviewLoading() => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-        PreviewLoadError(:final message) => Scaffold(
-          appBar: AppBar(
-            leading: BackButton(onPressed: onBack),
-            title: const Text('Anteprima PDF'),
+    return BlocListener<PreviewCubit, PreviewState>(
+      listenWhen: (previous, current) => current is PreviewDeleted,
+      listener: (context, state) {
+        // Variante eliminata altrove mentre la preview era aperta
+        // (ticket 23, stesso caso di EditorDeleted): torna indietro.
+        final back = onBack ?? () => Navigator.maybePop(context);
+        back();
+      },
+      child: BlocBuilder<PreviewCubit, PreviewState>(
+        builder: (context, state) => switch (state) {
+          // PreviewDeleted condivide lo spinner: è transitorio, il
+          // BlocListener sopra sta già navigando via.
+          PreviewLoading() || PreviewDeleted() => const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
           ),
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text('Errore: $message', textAlign: TextAlign.center),
+          PreviewLoadError(:final message) => Scaffold(
+            appBar: AppBar(
+              leading: BackButton(onPressed: onBack),
+              title: const Text('Anteprima PDF'),
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Text('Errore: $message', textAlign: TextAlign.center),
+              ),
             ),
           ),
-        ),
-        PreviewReady() => _PreviewReadyView(
-          state: state,
-          onBack: onBack,
-          pdfExporter: pdfExporter,
-          pdfDelivery: pdfDelivery,
-        ),
-      },
+          PreviewReady() => _PreviewReadyView(
+            state: state,
+            onBack: onBack,
+            pdfExporter: pdfExporter,
+            pdfDelivery: pdfDelivery,
+          ),
+        },
+      ),
     );
   }
 }

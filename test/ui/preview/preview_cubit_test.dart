@@ -76,6 +76,24 @@ void main() {
       await cubit.close();
     });
 
+    test('variante eliminata altrove → PreviewDeleted (ticket 23)', () async {
+      final repo = InMemoryCvRepository();
+      final id = await _seed(repo);
+      final cubit = PreviewCubit(
+        repository: repo,
+        variantId: id,
+        pdfExporter: _FakePdfExporter(),
+      );
+      await _pump();
+      expect(cubit.state, isA<PreviewReady>());
+
+      await repo.delete(id);
+      await _pump();
+
+      expect(cubit.state, isA<PreviewDeleted>());
+      await cubit.close();
+    });
+
     test('documento modificato altrove propaga e marca stale senza rigenerare', () async {
       final repo = InMemoryCvRepository();
       final id = await _seed(repo, name: 'Alpha');

@@ -34,6 +34,13 @@ class PreviewLoadError extends PreviewState {
   const PreviewLoadError(this.message);
 }
 
+/// La variante aperta in preview è stata eliminata altrove (stesso caso
+/// di `EditorDeleted`, ticket 23 — multi-finestra su desktop). La UI
+/// reagisce tornando all'editor/libreria.
+class PreviewDeleted extends PreviewState {
+  const PreviewDeleted();
+}
+
 class PreviewReady extends PreviewState {
   final CvDocument document;
   final TemplateId templateId;
@@ -83,6 +90,28 @@ class PreviewReady extends PreviewState {
     renderedLocale: renderedLocale ?? this.renderedLocale,
     renderGeneration: renderGeneration ?? this.renderGeneration,
   );
+
+  @override
+  bool operator ==(Object other) =>
+      other is PreviewReady &&
+      other.document == document &&
+      other.templateId == templateId &&
+      other.labelLocale == labelLocale &&
+      other.renderedDocument == renderedDocument &&
+      other.renderedTemplate == renderedTemplate &&
+      other.renderedLocale == renderedLocale &&
+      other.renderGeneration == renderGeneration;
+
+  @override
+  int get hashCode => Object.hash(
+    document,
+    templateId,
+    labelLocale,
+    renderedDocument,
+    renderedTemplate,
+    renderedLocale,
+    renderGeneration,
+  );
 }
 
 /// Il render di [PreviewCubit.buildPdf] è fallito. Il chiamante (il box
@@ -111,6 +140,15 @@ class PreviewCubit extends Cubit<PreviewState> {
     _sub = _repo.watch(variantId).listen(
       (doc) => _onDocument(doc, initialTemplate, initialLabelLocale),
       onError: (Object err) => emit(PreviewLoadError(err.toString())),
+      onDone: () {
+        // Lo stream si chiude anche quando `watch()` non trova subito
+        // l'id: in quel caso `onError` ha già portato lo stato a
+        // `PreviewLoadError` prima che questo `onDone` scatti, quindi il
+        // branch sotto non attiva su quel path.
+        if (state is PreviewReady || state is PreviewLoading) {
+          emit(const PreviewDeleted());
+        }
+      },
     );
   }
 
