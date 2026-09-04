@@ -67,6 +67,14 @@ dependencies:
   super_editor: ">=0.3.0-dev.31 <0.3.0-dev.40"
   super_editor_markdown: ^0.2.2
 
+  # Scatto diretto della foto profilo (ticket 26, user story 2). `file_picker`
+  # copre la scelta da file/galleria su tutte le piattaforme ma non lo
+  # scatto; `image_picker` ha implementazioni per tutte e 6, ma
+  # `ImageSource.camera` è raggiungibile senza `cameraDelegate` custom solo
+  # su Android/iOS — su Web/macOS/Windows/Linux il widget non espone
+  # l'opzione (vedi `defaultCameraAvailable` in profile_photo_field.dart).
+  image_picker: ^1.2.3              # BSD-3-Clause
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
