@@ -156,27 +156,42 @@ class _PreviewReadyView extends StatelessWidget {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: TemplatePicker(
-              key: const Key('preview_template_picker'),
-              selected: state.templateId,
-              onChanged: cubit.templateChanged,
+          // `TemplatePicker` dimensiona le thumbnail in proporzione alla
+          // larghezza disponibile (aspect ratio 210/297, verticale): a
+          // piena larghezza schermo diventerebbe altissima e sfonderebbe
+          // l'altezza della Column. La striscia della preview resta
+          // quindi centrata e limitata come nel dialog di export.
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: TemplatePicker(
+                  key: const Key('preview_template_picker'),
+                  selected: state.templateId,
+                  onChanged: cubit.templateChanged,
+                ),
+              ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: DropdownButtonFormField<LabelLocale>(
-              key: const Key('preview_locale_dropdown'),
-              initialValue: state.labelLocale,
-              decoration: const InputDecoration(labelText: 'Lingua etichette'),
-              items: [
-                for (final l in LabelLocale.values)
-                  DropdownMenuItem(value: l, child: Text(l.displayName)),
-              ],
-              onChanged: (v) {
-                if (v != null) cubit.labelLocaleChanged(v);
-              },
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: DropdownButtonFormField<LabelLocale>(
+                  key: const Key('preview_locale_dropdown'),
+                  initialValue: state.labelLocale,
+                  decoration: const InputDecoration(labelText: 'Lingua etichette'),
+                  items: [
+                    for (final l in LabelLocale.values)
+                      DropdownMenuItem(value: l, child: Text(l.displayName)),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) cubit.labelLocaleChanged(v);
+                  },
+                ),
+              ),
             ),
           ),
           if (state.stale) _StaleBanner(onRefresh: cubit.regenerate),
