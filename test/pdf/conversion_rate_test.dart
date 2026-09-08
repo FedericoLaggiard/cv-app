@@ -4,12 +4,17 @@
 /// recall/precision with a per-section breakdown and records the baseline.
 /// The 85/90 gate arrives with Slice P (ticket 53).
 ///
-/// The corpus fixture shipped here (`fixtures/europass_it_01.*.json`) is a
-/// synthetic placeholder authored by hand to exercise this harness
-/// end-to-end — it is not a real captured extraction. Real corpus capture
-/// happens via `integration_test/capture_fixtures_test.dart`, run once by
-/// hand on macOS (see that file's doc comment), which this test does not
-/// require and does not run in CI.
+/// **The corpus fixture shipped here is not a real baseline yet.**
+/// `fixtures/europass_it_01.*.json` is a synthetic placeholder authored by
+/// hand — clean, idealized data used to prove this harness end-to-end, not
+/// a real captured extraction. It intentionally does **not** reproduce the
+/// ~4%/~18% recall/precision the Problem Statement estimated by hand on a
+/// real Europass PDF, and the numbers it prints must not be read as that
+/// baseline. Replacing it is the next step, still open on this ticket: run
+/// `integration_test/capture_fixtures_test.dart` by hand on macOS against a
+/// real CV (see that file's doc comment for the full checklist — capture,
+/// hand-redact remaining free-text PII, hand-author the golden), then add
+/// the result here alongside or instead of this placeholder.
 library;
 
 import 'package:cv_app/src/pdf/pdf_import_heuristics.dart';

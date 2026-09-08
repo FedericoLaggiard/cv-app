@@ -7,6 +7,16 @@
 /// weighting, so the number is dominated by Esperienze — that's where the
 /// user's manual work concentrates, so it should be. The breakdown below is
 /// diagnostic, not the objective.
+///
+/// **Known limitation**: list items (`esperienze[i]`, `formazione[i]`,
+/// `certificazioni[i]`) are matched to the golden by *position*, not by
+/// content. On a fixture where `buildFromPages` groups items in a
+/// different order than the golden's hand-authored order, correctly
+/// extracted fields can score as wrong purely from index misalignment —
+/// understating recall/precision rather than measuring the real gap. Not a
+/// concern for the current clean single-item-per-date-line corpus, but
+/// worth revisiting (e.g. content-based matching) once messier real
+/// documents join the corpus.
 library;
 
 import 'package:cv_app/src/domain/cv_document.dart';
