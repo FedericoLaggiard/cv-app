@@ -7,6 +7,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../pdf/import_availability.dart';
 import '../../repository/cv_repository.dart';
 import 'library_cubit.dart';
 
@@ -485,8 +486,10 @@ Future<DuplicateSelection?> showDuplicateFromNewDialog(
 /// Bottom sheet shown when the user taps the "Nuova" card.  Offers the three
 /// entry-point actions from ticket 07: Da zero / Da PDF esistente / Duplica.
 ///
-/// "Da PDF esistente" is disabled because the PDF import flow lands with a
-/// later ticket — but the entry point must exist in this slice per the spec.
+/// "Da PDF esistente" (ticket 28) is disabled only on Web when `pdfrx`'s
+/// WASM module fails to initialize on the current target — see
+/// [ImportAvailability] — with an explicit tooltip instead of a silent
+/// crash on first use, per ticket 10's graceful-degrade requirement.
 class NewVariantMenuSheet extends StatelessWidget {
   const NewVariantMenuSheet({super.key});
 
@@ -503,13 +506,30 @@ class NewVariantMenuSheet extends StatelessWidget {
             onTap: () =>
                 Navigator.of(context).pop(NewVariantAction.fromScratch),
           ),
-          ListTile(
-            key: const Key('new_from_pdf'),
-            enabled: false,
-            leading: const Icon(Icons.upload_file_outlined),
-            title: const Text('Da PDF esistente…'),
-            subtitle: const Text('Disponibile in un prossimo aggiornamento'),
-            onTap: () => Navigator.of(context).pop(NewVariantAction.fromPdf),
+          FutureBuilder<bool>(
+            future: ImportAvailability.instance.isAvailable(),
+            initialData: ImportAvailability.instance.cachedAvailable,
+            builder: (context, snapshot) {
+              final available = snapshot.data ?? true;
+              final tile = ListTile(
+                key: const Key('new_from_pdf'),
+                enabled: available,
+                leading: const Icon(Icons.upload_file_outlined),
+                title: const Text('Da PDF esistente…'),
+                subtitle: available
+                    ? null
+                    : const Text('Non disponibile su questo browser'),
+                onTap: () =>
+                    Navigator.of(context).pop(NewVariantAction.fromPdf),
+              );
+              return available
+                  ? tile
+                  : Tooltip(
+                      message:
+                          'L\'import PDF non è disponibile su questo browser.',
+                      child: tile,
+                    );
+            },
           ),
           ListTile(
             key: const Key('new_duplicate'),

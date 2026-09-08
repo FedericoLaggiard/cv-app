@@ -180,7 +180,9 @@ void main() {
       expect(find.byKey(const Key('new_variant_confirm')), findsOneWidget);
     });
 
-    testWidgets('Da PDF entry point is disabled', (tester) async {
+    testWidgets('Da PDF entry point is enabled off Web (ticket 28)', (
+      tester,
+    ) async {
       final cubit = _emptyLoadedCubit();
       await tester.pumpWidget(_makeApp(cubit: cubit));
       await _settleLibrary(tester);
@@ -191,7 +193,7 @@ void main() {
       final tile = tester.widget<ListTile>(
         find.byKey(const Key('new_from_pdf')),
       );
-      expect(tile.enabled, isFalse);
+      expect(tile.enabled, isTrue);
     });
   });
 
