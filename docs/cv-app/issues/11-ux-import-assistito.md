@@ -1,7 +1,7 @@
 # UX della revisione dell'import assistito
 
 Type: prototype
-Status: closed
+Status: reopened
 Blocked by: 07, 10
 
 ## Question
@@ -34,3 +34,13 @@ Nel [ticket 10](10-scelta-libreria-pdf.md) l'utente ha esplicitato la strategia 
 Di conseguenza la schermata di revisione affiancata (PDF ↔ testo estratto ↔ campi) descritta in questo ticket **non serve nell'MVP**. Il ticket viene mantenuto come traccia per la v2, dove è previsto l'import assistito come alternativa opzionale all'auto-import per PDF su cui l'auto-mapping produce risultati scarsi.
 
 Riaprire quando si affronterà la v2 dell'import.
+
+## Amendment (post-28) — riclassificato a "MVP, versione leggera"
+
+Questo ticket era stato chiuso **come conseguenza** della scelta del ticket 10 (auto-import puro), non per un giudizio autonomo. L'implementazione di quella scelta si è dimostrata inadeguata su CV reali: baseline stimata **recall ~4%, precisione ~18%** su un CV Europass. La ricerca del [ticket 05](05-ricerca-import-pdf.md) lo aveva previsto.
+
+**Entra nell'MVP**: il **passo di revisione** in versione leggera — schermata che mostra le proposte dell'import con i campi incerti evidenziati, conferma in blocco o correzione inline, "Da rivedere" come pannello sorgente. Nessun visore PDF affiancato.
+
+**Resta a questo ticket (v2)**: il wizard completo — PDF renderizzato ↔ testo estratto ↔ campi, trasferimento per drag&drop. La schermata leggera **è** il pannello destro del wizard: la v2 si ottiene per aggiunta, non per riscrittura.
+
+Punti già chiusi qui: confidence **binaria** con evidenziazione visiva (mai un punteggio numerico); mobile = lista verticale a sezioni, non split-view. Vedi [ADR 0002](../../adr/0002-import-proposal-report.md).
