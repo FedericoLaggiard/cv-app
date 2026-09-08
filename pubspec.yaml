@@ -84,6 +84,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # Manual, one-off fixture capture for the PDF-import conversion-rate
+  # corpus (ticket 50) — never runs in CI, see
+  # integration_test/capture_fixtures_test.dart.
+  integration_test:
+    sdk: flutter
+
   flutter_lints: ^6.0.0
 
   # Code generation per freezed + json_serializable (ticket 06).

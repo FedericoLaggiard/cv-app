@@ -1,0 +1,26 @@
+{
+  "layoutFamily": "single_column",
+  "fields": {
+    "contatti.email": "anna.bianchi83@example-mail.com",
+    "contatti.telefono": "+39 345 1122334",
+    "contatti.link[0]": "https://linkedin.com/in/annabianchi83",
+    "esperienze[0].ruolo": "Sviluppatrice Backend",
+    "esperienze[0].azienda": "TechCorp Srl",
+    "esperienze[0].startDate": "2021-03",
+    "esperienze[0].current": "true",
+    "esperienze[0].descrizione": "Sviluppatrice Backend presso TechCorp Srl Sviluppo di API REST in Dart e gestione di pipeline CI/CD.",
+    "esperienze[1].ruolo": "Sviluppatrice Junior",
+    "esperienze[1].azienda": "WebSoft Italia",
+    "esperienze[1].startDate": "2018-06",
+    "esperienze[1].endDate": "2021-02",
+    "esperienze[1].current": "false",
+    "esperienze[1].descrizione": "Sviluppatrice Junior presso WebSoft Italia Manutenzione di applicazioni web Java e supporto al team QA.",
+    "formazione[0].titolo": "Laurea in Informatica",
+    "formazione[0].istituto": "Universita di Bologna",
+    "formazione[0].startDate": "2015-09",
+    "formazione[0].endDate": "2018-07",
+    "formazione[0].descrizione": "Laurea in Informatica, Universita di Bologna Tesi su algoritmi di ottimizzazione combinatoria.",
+    "certificazioni[0].nome": "AWS Certified Cloud Practitioner",
+    "certificazioni[1].nome": "Scrum Fundamentals Certified"
+  }
+}

@@ -47,3 +47,9 @@ app.*.map.json
 # Mutation testing (ticket 22)
 /mutation-test-report/
 /.mutation-fingerprint
+
+# PDF-import conversion-rate corpus (ticket 50): the anonymization
+# substitution map is per-capture-run and must never be committed — it's
+# the key to un-anonymizing test/pdf/fixtures/*.json against the source
+# PDFs (which never enter the repo either).
+/test/pdf/fixtures/.anonymization_map.json

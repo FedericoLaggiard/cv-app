@@ -104,6 +104,34 @@ class PdfImporter {
     }
   }
 
+  /// Extracts per-page line/height text without running scanned/empty
+  /// classification or the heuristics mapping — used by the one-off
+  /// fixture-capture harness (ticket 50,
+  /// `integration_test/capture_fixtures_test.dart`) to freeze a real
+  /// extraction into a JSON fixture.
+  Future<List<heuristics.PdfPageText>> extractPages(
+    Uint8List bytes, {
+    String? password,
+  }) async {
+    await pdfrx.pdfrxFlutterInitialize();
+    final document = await pdfrx.PdfDocument.openData(
+      bytes,
+      passwordProvider: pdfrx.createSimplePasswordProvider(password),
+      firstAttemptByEmptyPassword: password == null,
+      sourceName: 'pdf_import_capture',
+    );
+    try {
+      final pages = <heuristics.PdfPageText>[];
+      for (final page in document.pages) {
+        final structured = await page.loadStructuredText();
+        pages.add(_toPageText(page.pageNumber - 1, structured));
+      }
+      return pages;
+    } finally {
+      await document.dispose();
+    }
+  }
+
   /// Reconstructs line-level [heuristics.PdfPageText] from pdfrx's
   /// word/run-level fragments: splits the page's full text on newlines
   /// (pdfrx's structured-text formatter already inserts them at detected
