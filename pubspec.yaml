@@ -75,6 +75,11 @@ dependencies:
   # l'opzione (vedi `defaultCameraAvailable` in profile_photo_field.dart).
   image_picker: ^1.2.3              # BSD-3-Clause
 
+  # PDF text extraction per l'auto-import (ticket 28). Scelto in ticket
+  # 05/10 (vedi docs/cv-app/map.md): MIT, cross-platform incluso Web WASM;
+  # Syncfusion escluso per policy licenze.
+  pdfrx: ^2.6.1                     # MIT
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

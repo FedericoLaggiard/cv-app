@@ -119,6 +119,25 @@ class InMemoryCvRepository implements CvRepository {
   }
 
   @override
+  Future<CvDocument> createFrom(CvDocument doc) async {
+    final now = _now().toUtc();
+    final name = _nameClashes(doc.variantName)
+        ? _duplicateName(doc.variantName)
+        : doc.variantName;
+    final created = doc.copyWith(
+      id: _uuid.v4(),
+      createdAt: now,
+      updatedAt: now,
+      variantName: name,
+    );
+    final gcd = garbageCollectAssets(created);
+    validateStructure(gcd);
+    _byId[gcd.id] = gcd;
+    _bump.add(null);
+    return gcd;
+  }
+
+  @override
   Future<void> save(CvDocument doc) async {
     // Auto-save pipeline: GC unreferenced assets, validate, stamp updatedAt.
     if (!_byId.containsKey(doc.id)) throw CvRepositoryNotFound(doc.id);

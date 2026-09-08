@@ -11,6 +11,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/cv_document.dart';
 import '../../repository/cv_repository.dart';
 
 // ─────────────────────────── States ────────────────────────────────────────
@@ -104,6 +105,17 @@ class LibraryCubit extends Cubit<LibraryState> {
     _guardName(name);
     final doc = await _repo.create(initialVariantName: name.trim());
     return doc.id;
+  }
+
+  /// Creates a new variant from a pre-filled [doc] (ticket 28: PDF
+  /// auto-import) — mirrors [createNewNamed]/[duplicateVariantAs] but the
+  /// content comes from the importer rather than being blank/copied.
+  /// [doc]'s `variantName` is used as the desired name; the repository
+  /// auto-suffixes it with `(N)` on collision, so no [LibraryValidationException]
+  /// is thrown here. Returns the new variant's id.
+  Future<String?> createFromImport(CvDocument doc) async {
+    final created = await _repo.createFrom(doc);
+    return created.id;
   }
 
   /// Hard-deletes a variant by [id].

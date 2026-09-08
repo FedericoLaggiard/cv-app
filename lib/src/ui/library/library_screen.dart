@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import '../../repository/cv_repository.dart';
 import 'library_cubit.dart';
 import 'library_dialogs.dart';
+import 'pdf_import_flow.dart';
 import 'variant_card.dart';
 
 /// The Library screen widget.
@@ -72,9 +73,11 @@ class LibraryScreen extends StatelessWidget {
       case NewVariantAction.duplicate:
         await _handleDuplicateFromNew(ctx, cubit);
       case NewVariantAction.fromPdf:
-        // Disabled in the sheet; kept in the enum for the later PDF-import
-        // ticket.  Reaching this branch should be impossible in practice.
-        break;
+        await runPdfImportFlow(
+          ctx,
+          cubit: cubit,
+          onOpenVariant: onOpenVariant,
+        );
     }
   }
 

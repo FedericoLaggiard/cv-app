@@ -22,6 +22,13 @@ abstract class CvRepository {
 
   Future<CvDocument> create({String? initialVariantName});
   Future<CvDocument> duplicate(String id);
+
+  /// Persists a fully-built [doc] as a brand-new variant (ticket 28: PDF
+  /// auto-import). Ignores [doc]'s `id`/`createdAt`/`updatedAt` — a fresh
+  /// id and current timestamps are always assigned — and auto-suffixes
+  /// `doc.variantName` with `(N)` on collision, same as [duplicate].
+  Future<CvDocument> createFrom(CvDocument doc);
+
   Future<void> save(CvDocument doc);
   Future<void> delete(String id);
 

@@ -472,6 +472,8 @@ class _CountingRepo implements CvRepository {
   @override
   Future<CvDocument> duplicate(String id) => _inner.duplicate(id);
   @override
+  Future<CvDocument> createFrom(CvDocument doc) => _inner.createFrom(doc);
+  @override
   Future<void> delete(String id) => _inner.delete(id);
   @override
   Future<ImportResult> importFromBytes(Uint8List bytes) =>
@@ -504,6 +506,8 @@ class _FailingSaveRepo implements CvRepository {
       _inner.create(initialVariantName: initialVariantName);
   @override
   Future<CvDocument> duplicate(String id) => _inner.duplicate(id);
+  @override
+  Future<CvDocument> createFrom(CvDocument doc) => _inner.createFrom(doc);
   @override
   Future<void> delete(String id) => _inner.delete(id);
   @override
@@ -540,6 +544,8 @@ class _NotFoundOnSaveRepo implements CvRepository {
   @override
   Future<CvDocument> duplicate(String id) => _inner.duplicate(id);
   @override
+  Future<CvDocument> createFrom(CvDocument doc) => _inner.createFrom(doc);
+  @override
   Future<void> delete(String id) => _inner.delete(id);
   @override
   Future<ImportResult> importFromBytes(Uint8List bytes) =>
@@ -565,6 +571,8 @@ class _DeletedBeforeFirstEmitRepo implements CvRepository {
       throw UnimplementedError();
   @override
   Future<CvDocument> duplicate(String id) => throw UnimplementedError();
+  @override
+  Future<CvDocument> createFrom(CvDocument doc) => throw UnimplementedError();
   @override
   Future<void> delete(String id) async {}
   @override

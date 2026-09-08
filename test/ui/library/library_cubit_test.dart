@@ -1,6 +1,7 @@
 /// Unit tests for LibraryCubit.
 library;
 
+import 'package:cv_app/src/domain/cv_document.dart';
 import 'package:cv_app/src/repository/in_memory_cv_repository.dart';
 import 'package:cv_app/src/ui/library/library_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -198,6 +199,46 @@ void main() {
       await expectLater(
         cubit.duplicateVariantAs(id, 'Taken'),
         throwsA(isA<LibraryValidationException>()),
+      );
+    });
+  });
+
+  group('LibraryCubit — createFromImport (ticket 28)', () {
+    test('creates a variant from a pre-filled document', () async {
+      final cubit = LibraryCubit(repository: _repo());
+      await cubit.load();
+
+      final draft = CvDocument(
+        id: 'ignored',
+        createdAt: DateTime.utc(2000),
+        updatedAt: DateTime.utc(2000),
+        variantName: 'Mario Rossi',
+      );
+      final id = await cubit.createFromImport(draft);
+      expect(id, isNotNull);
+
+      final loaded = await _waitFor(cubit, (s) => s.variants.isNotEmpty);
+      expect(loaded.variants.single.id, id);
+      expect(loaded.variants.single.variantName, 'Mario Rossi');
+    });
+
+    test('auto-suffixes the name on collision instead of throwing', () async {
+      final cubit = LibraryCubit(repository: _repo());
+      await cubit.load();
+      await cubit.createNewNamed('Mario Rossi');
+      await _waitFor(cubit, (s) => s.variants.isNotEmpty);
+
+      final draft = CvDocument(
+        id: 'ignored',
+        createdAt: DateTime.utc(2000),
+        updatedAt: DateTime.utc(2000),
+        variantName: 'Mario Rossi',
+      );
+      await cubit.createFromImport(draft);
+      final loaded = await _waitFor(cubit, (s) => s.variants.length == 2);
+      expect(
+        loaded.variants.map((v) => v.variantName),
+        containsAll(['Mario Rossi', 'Mario Rossi (2)']),
       );
     });
   });

@@ -97,6 +97,34 @@ void main() {
     });
   });
 
+  group('createFrom (ticket 28)', () {
+    test('persiste un CvDocument pre-costruito con id/timestamp nuovi', () async {
+      final repo = _repo();
+      final draft = CvDocument(
+        id: 'ignored',
+        createdAt: DateTime.utc(2000),
+        updatedAt: DateTime.utc(2000),
+        variantName: 'Mario Rossi',
+      );
+      final created = await repo.createFrom(draft);
+      expect(created.id, isNot('ignored'));
+      expect((await repo.watch(created.id).first).variantName, 'Mario Rossi');
+    });
+
+    test('auto-suffissa il nome su collisione', () async {
+      final repo = _repo();
+      await repo.create(initialVariantName: 'Mario Rossi');
+      final draft = CvDocument(
+        id: 'ignored',
+        createdAt: DateTime.utc(2000),
+        updatedAt: DateTime.utc(2000),
+        variantName: 'Mario Rossi',
+      );
+      final created = await repo.createFrom(draft);
+      expect(created.variantName, 'Mario Rossi (2)');
+    });
+  });
+
   group('import', () {
     test('ImportSuccess for a fresh document', () async {
       final repo = _repo();

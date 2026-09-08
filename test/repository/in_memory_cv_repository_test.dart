@@ -76,6 +76,37 @@ void main() {
     });
   });
 
+  group('createFrom', () {
+    test('assegna id/timestamp nuovi e persiste il contenuto (ticket 28)', () async {
+      final repo = _repo();
+      final draft = CvDocument(
+        id: 'ignored',
+        createdAt: DateTime.utc(2000),
+        updatedAt: DateTime.utc(2000),
+        variantName: 'Mario Rossi',
+      );
+      final created = await repo.createFrom(draft);
+      expect(created.id, isNotEmpty);
+      expect(created.id, isNot('ignored'));
+      expect(created.variantName, 'Mario Rossi');
+      expect(created.createdAt, created.updatedAt);
+      expect(await repo.watch(created.id).first, created);
+    });
+
+    test('auto-suffissa il nome su collisione, come duplicate', () async {
+      final repo = _repo();
+      await repo.create(initialVariantName: 'Mario Rossi');
+      final draft = CvDocument(
+        id: 'ignored',
+        createdAt: DateTime.utc(2000),
+        updatedAt: DateTime.utc(2000),
+        variantName: 'Mario Rossi',
+      );
+      final created = await repo.createFrom(draft);
+      expect(created.variantName, 'Mario Rossi (2)');
+    });
+  });
+
   group('save', () {
     test('updates updatedAt on every save', () async {
       final repo = _repo();

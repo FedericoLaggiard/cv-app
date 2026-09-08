@@ -81,6 +81,38 @@ void main() {
     });
   });
 
+  group('createFrom (ticket 28)', () {
+    test('persiste un CvDocument pre-costruito con id/timestamp nuovi', () async {
+      final fs = FakeFileSystemService();
+      final repo = _repo(fs);
+      final draft = CvDocument(
+        id: 'ignored',
+        createdAt: DateTime.utc(2000),
+        updatedAt: DateTime.utc(2000),
+        variantName: 'Mario Rossi',
+      );
+      final created = await repo.createFrom(draft);
+      expect(created.id, isNot('ignored'));
+      expect(fs.files.keys, [created.id]);
+      final snap = await repo.watchAll().first;
+      expect(snap.map((s) => s.variantName), ['Mario Rossi']);
+    });
+
+    test('auto-suffissa il nome su collisione', () async {
+      final fs = FakeFileSystemService();
+      final repo = _repo(fs);
+      await repo.create(initialVariantName: 'Mario Rossi');
+      final draft = CvDocument(
+        id: 'ignored',
+        createdAt: DateTime.utc(2000),
+        updatedAt: DateTime.utc(2000),
+        variantName: 'Mario Rossi',
+      );
+      final created = await repo.createFrom(draft);
+      expect(created.variantName, 'Mario Rossi (2)');
+    });
+  });
+
   group('delete', () {
     test('removes the file and closes watch()', () async {
       final fs = FakeFileSystemService();

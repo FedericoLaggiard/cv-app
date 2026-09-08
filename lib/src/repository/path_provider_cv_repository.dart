@@ -233,6 +233,25 @@ class PathProviderCvRepository implements CvRepository {
   }
 
   @override
+  Future<CvDocument> createFrom(CvDocument doc) async {
+    await _bootstrap();
+    final now = _now().toUtc();
+    final name = _nameTakenByOthers(doc.variantName, exceptId: null)
+        ? _findFreeSuffixedName(doc.variantName.trim(), exceptId: null)
+        : doc.variantName;
+    final created = doc.copyWith(
+      id: _uuid.v4(),
+      createdAt: now,
+      updatedAt: now,
+      variantName: name,
+    );
+    final gcd = garbageCollectAssets(created);
+    validateStructure(gcd);
+    await _persist(gcd);
+    return gcd;
+  }
+
+  @override
   Future<void> save(CvDocument doc) async {
     await _bootstrap();
     final gcd = garbageCollectAssets(doc);

@@ -232,6 +232,24 @@ class IdbCvRepository implements CvRepository {
   }
 
   @override
+  Future<CvDocument> createFrom(CvDocument doc) async {
+    final now = _now().toUtc();
+    final name = await _nameTakenByOthers(doc.variantName, exceptId: null)
+        ? await _findFreeSuffixedName(doc.variantName.trim(), exceptId: null)
+        : doc.variantName;
+    final created = doc.copyWith(
+      id: _uuid.v4(),
+      createdAt: now,
+      updatedAt: now,
+      variantName: name,
+    );
+    final gcd = garbageCollectAssets(created);
+    validateStructure(gcd);
+    await _persist(gcd);
+    return gcd;
+  }
+
+  @override
   Future<void> save(CvDocument doc) async {
     final gcd = garbageCollectAssets(doc);
     validateStructure(gcd);
