@@ -1,0 +1,52 @@
+{
+  "layoutFamily": "single_column",
+  "fields": {
+    "contatti.email": "ecrlisfoafagzmpo@example.com",
+
+    "esperienze[0].ruolo": "Flutter Architect",
+    "esperienze[0].azienda": "Nortek Bank",
+    "esperienze[0].startDate": "2024-01",
+    "esperienze[0].current": "true",
+    "esperienze[0].descrizione": "Architecture & Development: Designed and led the architectural evolution of a production-grade Flutter application dedicated to the Italian sales network, ensuring a scalable and maintainable clean architecture. State Management & Code Quality: Implemented robust state management patterns using BloC, enforcing strict guidelines for code quality, security, and maintainability. Native Integration: Developed custom method channels and integrated native components using Swift (iOS) and Kotlin (Android) to bridge voice assistants (Siri & Google Assistant). AI Innovation: Pioneered the integration of AI-powered systems (Multi-agent platform on Azure) to build a dynamic, tailored suggestion engine for personalized financial packages, customer-based information and , boosting user experience and productivity.",
+
+    "esperienze[1].ruolo": "Technical Project Lead",
+    "esperienze[1].azienda": "Solenne Insurance",
+    "esperienze[1].startDate": "2022-01",
+    "esperienze[1].endDate": "2023-09",
+    "esperienze[1].current": "false",
+    "esperienze[1].descrizione": "Lifecycle Ownership: Owned the full mobile development lifecycle of a high-performance Flutter application interfacing with hardware IoT accelerometers. Advanced Flutter Interoperability: Engineered high-speed, secure communication channels between Flutter and native mobile SDKs utilizing Method Channels & Pigeon. Full-on native development on iOS and Android for advanced features like stand-by management, geofencing integration, battery energy saving Engineering Culture: Conducted systematic Code Reviews and implemented software design patterns ensuring offline stability, gamification logic, and performance reliability.",
+
+    "esperienze[2].ruolo": "Frontend Team Leader",
+    "esperienze[2].azienda": "Veloxa",
+    "esperienze[2].startDate": "2023-10",
+    "esperienze[2].endDate": "2024-01",
+    "esperienze[2].current": "false",
+    "esperienze[2].descrizione": "Team Leadership & Mentoring: Managed and mentored a cross-functional team of 3 developers in an Agile product environment, fostering technical excellence and knowledge sharing. Technical Decisions: Directed the implementation of complex features (real-time chat, global forums) using React.js, Redux, PWA, and Web Push. AI Workflows: Leveraged AI capabilities to architect a dynamic technical knowledge base, significantly optimization information retrieval for global workshops.",
+
+    "esperienze[3].ruolo": "Technical Project Lead",
+    "esperienze[3].azienda": "Kelvex",
+    "esperienze[3].startDate": "2021-01",
+    "esperienze[3].endDate": "2021-07",
+    "esperienze[3].current": "false",
+    "esperienze[3].descrizione": "Mobile hybrid app in Flutter used to optimise the shipment of medium-big delivery companies. Kelvex internal A.I. product computes the best delivery routes based on multiple parameters DevOps & Delivery: Designed and maintained automated CI/CD pipelines using Bitrise, streamlining mobile delivery and automated tester distribution over Microsoft AppCenter. Core Integration: Integrated REST APIs, complex JSON data structures, and Firebase Push Notifications for critical real-time communication systems. Agile Management: Coordinated with AI research teams to ingest routing engine outputs into a clean, intuitive map-centric user interface.",
+
+    "esperienze[4].ruolo": "Technical Project Lead",
+    "esperienze[4].azienda": "PagoLink",
+    "esperienze[4].startDate": "2020-08",
+    "esperienze[4].endDate": "2021-01",
+    "esperienze[4].current": "false",
+    "esperienze[4].descrizione": "The software is a micro-front-end architecture in which stability, speed and offline-first are a must. It is developed entirely in React.js with Hooks, Redux, Redux-saga and Web-Socket (STOMP over Web-Socket). The app is constantly dealing with the devices hardwareinterrupts: POS for card payments, barcode scanners, wi-fi connection status, printers etc. Architectural Design: Designed from the ground up a highly stable, offline-first micro-frontend architecture deployed across 10,000+ transactional terminals in Italy. Scale & Performance: Managed a large frontend stream of up to 11 parallel developers using Agile methodologies, dealing with low-level hardware interrupts and strict security protocols.",
+
+    "esperienze[5].ruolo": "Technical Project Lead / Developer",
+    "esperienze[5].azienda": "Kelvex Italy",
+    "esperienze[5].startDate": "2012-01",
+    "esperienze[5].endDate": "2020-12",
+    "esperienze[5].current": "false",
+    "esperienze[5].descrizione": "Delivered enterprise-grade digital solutions for high-profile clients including Corsera Bank, Panthera Financial Services, Highland Financial Services, Telora, and Dolciva. Deepened expertise across React.js, Redux, Node.js, and early mobile hybrid frameworks (Apache Cordova/PhoneGap, native Objective-C/Java plugins).",
+
+    "formazione[0].titolo": "Secondary School Diploma in Information Technologies",
+    "formazione[0].istituto": "Istituto Tecnico Superiore G. Fermi",
+    "formazione[0].startDate": "2002-01",
+    "formazione[0].endDate": "2007-07"
+  }
+}

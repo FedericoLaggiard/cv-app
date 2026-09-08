@@ -1,0 +1,460 @@
+{
+  "layoutFamily": "single_column",
+  "pages": [
+    {
+      "pageIndex": 0,
+      "lines": [
+        {
+          "text": "Marco Ferretti",
+          "height": 16.15997314453125
+        },
+        {
+          "text": "Contact",
+          "height": 11.90399169921875
+        },
+        {
+          "text": "Bergamo, Italy (Home)",
+          "height": 10.11004638671875
+        },
+        {
+          "text": "ecrlisfoafagzmpo@example.com",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "ABOUT ME",
+          "height": 10.42999267578125
+        },
+        {
+          "text": "Highly accomplished Senior Mobile Engineer and Solutions Architect with",
+          "height": 10.11004638671875
+        },
+        {
+          "text": "over 5 years of dedicated experience in Flutter & Dart, and a robust 10+",
+          "height": 10.1600341796875
+        },
+        {
+          "text": "year background in frontend architecture and team leadership. Proven",
+          "height": 10.1600341796875
+        },
+        {
+          "text": "track record of delivering production-grade mobile applications within",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "highly regulated industries, including FinTech and Banking (Nortek,",
+          "height": 10.11004638671875
+        },
+        {
+          "text": "Solenne, Reale Mutua, Intesa San Paolo). Expert in scalable mobile",
+          "height": 10.09002685546875
+        },
+        {
+          "text": "architectures, and modern engineering practices like CI/CD automation",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "and AI-powered development tools. Strong advocate for clean",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "architecture, automated testing, and agile collaboration.",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "WORK EXPERIENCE",
+          "height": 10.42999267578125
+        },
+        {
+          "text": "Nortek | Kelvex Milano, Italy",
+          "height": 11.11004638671875
+        },
+        {
+          "text": "Flutter Architect | Nortek Bank",
+          "height": 10.967041015625
+        },
+        {
+          "text": "01/01/2024 - Current",
+          "height": 6.70501708984375
+        },
+        {
+          "text": "Architecture & Development: Designed and led the architectural",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "evolution of a production-grade Flutter application dedicated to the Italian",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "sales network, ensuring a scalable and maintainable clean architecture.",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "State Management & Code Quality: Implemented robust state",
+          "height": 10.100006103515625
+        },
+        {
+          "text": "management patterns using BloC, enforcing strict guidelines for code",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "quality, security, and maintainability.",
+          "height": 10.1099853515625
+        },
+        {
+          "text": "Native Integration: Developed custom method channels and integrated",
+          "height": 10.100006103515625
+        },
+        {
+          "text": "native components using Swift (iOS) and Kotlin (Android) to bridge voice",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "assistants (Siri & Google Assistant).",
+          "height": 10.100006103515625
+        },
+        {
+          "text": "AI Innovation: Pioneered the integration of AI-powered systems",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "(Multi-agent platform on Azure) to build a dynamic, tailored suggestion",
+          "height": 10.160003662109375
+        },
+        {
+          "text": "engine for personalized financial packages, customer-based information",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "and , boosting user experience and productivity.",
+          "height": 10.1099853515625
+        },
+        {
+          "text": "Solenne | Kelvex Bologna, Italy",
+          "height": 11.1099853515625
+        },
+        {
+          "text": "Technical Project Lead | Solenne Insurance",
+          "height": 11.1099853515625
+        },
+        {
+          "text": "01/01/2022 - 30/09/2023",
+          "height": 6.704986572265625
+        },
+        {
+          "text": "Lifecycle Ownership: Owned the full mobile development lifecycle of a",
+          "height": 10.160003662109375
+        },
+        {
+          "text": "high-performance Flutter application interfacing with hardware IoT",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "accelerometers.",
+          "height": 7.839996337890625
+        },
+        {
+          "text": "Advanced Flutter Interoperability: Engineered high-speed, secure",
+          "height": 10.100006103515625
+        },
+        {
+          "text": "communication channels between Flutter and native mobile SDKs utilizing",
+          "height": 10.100006103515625
+        },
+        {
+          "text": "Method Channels & Pigeon. Full-on native development on iOS and",
+          "height": 10.100006103515625
+        },
+        {
+          "text": "Android for advanced features like stand-by management, geofencing",
+          "height": 10.159988403320312
+        },
+        {
+          "text": "integration, battery energy saving",
+          "height": 10.110000610351562
+        },
+        {
+          "text": "Engineering Culture: Conducted systematic Code Reviews and",
+          "height": 10.110000610351562
+        },
+        {
+          "text": "implemented software design patterns ensuring offline stability,",
+          "height": 10.159988403320312
+        },
+        {
+          "text": "gamification logic, and performance reliability.",
+          "height": 10.159996032714844
+        },
+        {
+          "text": "Veloxa | Kelvex Novara, Italy",
+          "height": 11.110000610351562
+        },
+        {
+          "text": "Frontend Team Leader | Veloxa",
+          "height": 10.967002868652344
+        },
+        {
+          "text": "01/10/2023 - 01/01/2024",
+          "height": 6.7050018310546875
+        },
+        {
+          "text": "Team Leadership & Mentoring: Managed and mentored a",
+          "height": 10.099998474121094
+        }
+      ]
+    },
+    {
+      "pageIndex": 1,
+      "lines": [
+        {
+          "text": "cross-functional team of 3 developers in an Agile product environment,",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "fostering technical excellence and knowledge sharing.",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "Technical Decisions: Directed the implementation of complex features (real-time chat, global forums) using",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "React.js, Redux, PWA, and Web Push.",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "AI Workflows: Leveraged AI capabilities to architect a dynamic technical knowledge base, significantly",
+          "height": 10.1600341796875
+        },
+        {
+          "text": "optimization information retrieval for global workshops.",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "Kelvex Milano, Italy",
+          "height": 11.11004638671875
+        },
+        {
+          "text": "Technical Project Lead | Kelvex",
+          "height": 11.11004638671875
+        },
+        {
+          "text": "01/01/2021 - 01/07/2021",
+          "height": 6.70501708984375
+        },
+        {
+          "text": "Mobile hybrid app in Flutter used to optimise the shipment of medium-big delivery",
+          "height": 10.1600341796875
+        },
+        {
+          "text": "companies. Kelvex internal A.I. product computes the best delivery routes based on multiple parameters",
+          "height": 10.11004638671875
+        },
+        {
+          "text": "DevOps & Delivery: Designed and maintained automated",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "CI/CD pipelines using Bitrise, streamlining mobile delivery and automated tester distribution over Microsoft",
+          "height": 10.1600341796875
+        },
+        {
+          "text": "AppCenter.",
+          "height": 9.72998046875
+        },
+        {
+          "text": "Core Integration: Integrated REST APIs, complex JSON data structures, and Firebase Push Notifications for",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "critical real-time communication systems.",
+          "height": 10.11004638671875
+        },
+        {
+          "text": "Agile Management: Coordinated with AI research teams to ingest routing engine outputs into a clean,",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "intuitive map-centric user interface.",
+          "height": 10.1400146484375
+        },
+        {
+          "text": "PagoLink | Kelvex Milano, Italy",
+          "height": 11.1099853515625
+        },
+        {
+          "text": "Technical Project Lead | PagoLink",
+          "height": 11.1099853515625
+        },
+        {
+          "text": "01/08/2020 - 01/01/2021",
+          "height": 6.704986572265625
+        },
+        {
+          "text": "The software is a micro-front-end architecture in which stability, speed and offline-first are a must. It is",
+          "height": 10.160003662109375
+        },
+        {
+          "text": "developed entirely in React.js with Hooks, Redux, Redux-saga and Web-Socket (STOMP over Web-Socket). The",
+          "height": 10.1099853515625
+        },
+        {
+          "text": "app is constantly dealing with the devices hardwareinterrupts: POS for card payments, barcode scanners,",
+          "height": 10.160003662109375
+        },
+        {
+          "text": "wi-fi connection status, printers etc.",
+          "height": 10.1400146484375
+        },
+        {
+          "text": "Architectural Design: Designed from the ground up a highly stable, offline-first micro-frontend architecture",
+          "height": 10.160003662109375
+        },
+        {
+          "text": "deployed across 10,000+ transactional terminals in Italy.",
+          "height": 10.1099853515625
+        },
+        {
+          "text": "Scale & Performance: Managed a large frontend stream of up to 11 parallel developers using Agile",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "methodologies, dealing with low-level hardware interrupts and strict security protocols.",
+          "height": 10.1099853515625
+        },
+        {
+          "text": "Kelvex Italy",
+          "height": 11.1099853515625
+        },
+        {
+          "text": "Earlier Relevant Experience (Summary)",
+          "height": 11.1099853515625
+        },
+        {
+          "text": "Technical Project Lead / Developer (2012 – 2020): Delivered enterprise-grade digital solutions for",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "high-profile clients including Corsera Bank, Panthera Financial Services, Highland Financial Services,",
+          "height": 10.150009155273438
+        },
+        {
+          "text": "Telora, and Dolciva. Deepened expertise across React.js, Redux, Node.js, and early mobile hybrid",
+          "height": 10.159988403320312
+        },
+        {
+          "text": "frameworks (Apache Cordova/PhoneGap, native Objective-C/Java plugins).",
+          "height": 10.149993896484375
+        },
+        {
+          "text": "SKILLS",
+          "height": 10.416000366210938
+        },
+        {
+          "text": "Skills",
+          "height": 8.580001831054688
+        },
+        {
+          "text": "TECHNICAL SKILLS",
+          "height": 7.44000244140625
+        },
+        {
+          "text": "• Core Mobile: Flutter, Dart, BloC, Provider, State Management, Clean Architecture",
+          "height": 10.100006103515625
+        },
+        {
+          "text": "• Native Capabilities: iOS Development (Swift, Objective-C), Android Development (Kotlin, Java), Method",
+          "height": 10.149993896484375
+        },
+        {
+          "text": "Channels, Pigeon",
+          "height": 10.099998474121094
+        },
+        {
+          "text": "• Web & Backend: JavaScript (ES6+), React.js, Redux, Redux-Saga, Node.js, Vue.js, HTML5, CSS3, JSON/XML",
+          "height": 10.099998474121094
+        },
+        {
+          "text": "• DevOps & Tools: Git, CI/CD pipelines (Bitrise), Firebase, Microsoft AppCenter, Azure Cloud, Jira",
+          "height": 10.150001525878906
+        },
+        {
+          "text": "• AI Tools: Claude Code, Generative Ui, Google Gemini SDK, AI-powered IDE/development workflows",
+          "height": 10.150001525878906
+        },
+        {
+          "text": "SOFT SKILLS & METHODOLOGIES",
+          "height": 7.450000762939453
+        }
+      ]
+    },
+    {
+      "pageIndex": 2,
+      "lines": [
+        {
+          "text": "• Agile Mindset: Deep experience working inside Agile product teams, managing sprints, and",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "collaborating across Product, Design, and Backend teams.",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "• Leadership & Mentorship: Natural mentor with a proven track record of guiding junior engineers,",
+          "height": 10.1500244140625
+        },
+        {
+          "text": "organizing development streams, and improving overall engineering culture.",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "• Communication: Exceptional stakeholder management skills, bridging the gap between business",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "requirements and technical execution in both Italian and English.",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "EDUCATION & TRAINING",
+          "height": 10.42999267578125
+        },
+        {
+          "text": "01/01/2002 - 31/07/2007",
+          "height": 8.19500732421875
+        },
+        {
+          "text": "Secondary School Diploma in Information Technologies Istituto Tecnico Superiore G. Fermi",
+          "height": 11.1650390625
+        },
+        {
+          "text": "LANGUAGE SKILLS",
+          "height": 10.41595458984375
+        },
+        {
+          "text": "MOTHER TONGUE(S): Italian",
+          "height": 9.280029296875
+        },
+        {
+          "text": "OTHER LANGUAGE(S):",
+          "height": 8.92999267578125
+        },
+        {
+          "text": "English",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "Listening C2 Spoken production C1",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "Reading C2 Spoken interaction B2",
+          "height": 10.10003662109375
+        },
+        {
+          "text": "Writing C1",
+          "height": 10.10003662109375
+        }
+      ]
+    }
+  ]
+}
