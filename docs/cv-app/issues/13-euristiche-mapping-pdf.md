@@ -134,3 +134,18 @@ Se il titolo **non è riconosciuto** (non è nel dizionario, o non passa isolame
 - **Ticket 06 (stack)**: nessun impatto — nessuna nuova libreria richiesta oltre a `pdfrx`.
 - **Ticket 07 (UX editor)**: aspettarsi che l'editor si apra frequentemente con campi obbligatori vuoti (ruolo/azienda/nome) e con sezioni custom "Da rivedere" o "Skill"/"Lingue" ecc. affiancate a quelle fisse. Il ticket 07 deve prevedere la UX per "sezione custom presente ma valorizzabile → contenuto da spostare".
 - **Ticket 09 (foto e asset)**: se in v2 volessimo estrarre foto dai PDF, la superficie sarà `pdfrx.pages[i].images` (da validare); l'MVP non tocca il tema.
+
+## Amendment (post-28) — la filosofia conservativa cade col vincolo che la giustificava
+
+Questa risoluzione **non era sbagliata in partenza**: "precisione > recall" era la scelta giusta **dato l'auto-import puro** del ticket 10, dove un campo sbagliato finisce silenziosamente in un CV salvato. Il [ticket 11](11-ux-import-assistito.md) è stato riaperto e un **passo di revisione** entra nell'MVP: con l'umano nel loop, un suggerimento sbagliato costa una correzione a vista.
+
+**Resta valido**: la pipeline a tre livelli; il fallback anti-disastro (< 2 titoli → section-first disabilitato); **nessun punteggio numerico visibile**; l'invariante di non perdere nulla del PDF, ora rafforzato a test automatico.
+
+**Superato**:
+- *"Ruolo, azienda, titolo, ente → lasciati vuoti"*. L'obiezione ("quale riga è il ruolo?") ha una risposta non considerata allora: **un CV è internamente coerente**, quindi l'ordine si decide **una volta per documento a maggioranza**, non per blocco. Senza maggioranza chiara si ricade sul comportamento descritto sopra.
+- *"Nome/cognome: nessuna regex affidabile"*. Regola strutturale: prima riga non vuota prima di ogni heading, senza cifre né `@`, 2–4 token capitalizzati; marcata incerta oltre i 2 token.
+- *"Lingue/Skill non strutturati"*. Livelli CEFR espliciti e righe con separatori ripetuti sono segnali affidabili quando ci sono.
+
+**Difetti puri emersi dalla stessa analisi** (indipendenti dalla filosofia): la tabella dei formati data **non copre giorno+mese+anno** (`1 Jun 2024`, `30 SEP 2007`) — causa singola più grossa del fallimento; dizionario titoli senza la variante `&` e senza Sommario/Skill; regex URL generica che produce link da nomi di libreria; footer di pagina trattati come contenuto.
+
+Vedi [ADR 0002](../../adr/0002-import-proposal-report.md).
