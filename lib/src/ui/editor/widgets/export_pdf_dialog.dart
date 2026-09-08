@@ -20,12 +20,15 @@ class ExportChoice {
 
 /// Mostra il dialog. `initialLabelLocale` è il default proposto (lingua
 /// UI corrente dell'app, ticket 15 — hard-coded a IT finché il ticket 15
-/// non atterra completamente).
+/// non atterra completamente). `initialTemplate` permette di ereditare la
+/// scelta corrente da un chiamante che già ha un template selezionato
+/// (ticket 27: pulsante `Esporta` della preview PDF).
 Future<ExportChoice?> showExportPdfDialog(
   BuildContext context, {
   required CvDocument document,
   required MissingRequired missing,
   LabelLocale initialLabelLocale = LabelLocale.it,
+  TemplateId initialTemplate = TemplateId.classico,
 }) {
   return showDialog<ExportChoice>(
     context: context,
@@ -33,6 +36,7 @@ Future<ExportChoice?> showExportPdfDialog(
       document: document,
       missing: missing,
       initialLabelLocale: initialLabelLocale,
+      initialTemplate: initialTemplate,
     ),
   );
 }
@@ -42,18 +46,20 @@ class _ExportPdfDialog extends StatefulWidget {
     required this.document,
     required this.missing,
     required this.initialLabelLocale,
+    required this.initialTemplate,
   });
 
   final CvDocument document;
   final MissingRequired missing;
   final LabelLocale initialLabelLocale;
+  final TemplateId initialTemplate;
 
   @override
   State<_ExportPdfDialog> createState() => _ExportPdfDialogState();
 }
 
 class _ExportPdfDialogState extends State<_ExportPdfDialog> {
-  TemplateId _template = TemplateId.classico;
+  late TemplateId _template = widget.initialTemplate;
   late LabelLocale _locale = widget.initialLabelLocale;
 
   @override

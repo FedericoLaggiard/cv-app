@@ -21,6 +21,7 @@ import 'src/repository/cv_repository.dart';
 import 'src/ui/editor/editor_screen.dart';
 import 'src/ui/library/library_cubit.dart';
 import 'src/ui/library/library_screen.dart';
+import 'src/ui/preview/preview_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,7 +108,18 @@ class _AppRoot extends StatelessWidget {
             variantId: state.pathParameters['id']!,
             repository: ctx.read<CvRepository>(),
             onBack: () => ctx.pop(),
+            onPreview: (id) => ctx.push('/editor/$id/preview'),
           ),
+          routes: [
+            GoRoute(
+              path: 'preview',
+              builder: (ctx, state) => PreviewScreen(
+                variantId: state.pathParameters['id']!,
+                repository: ctx.read<CvRepository>(),
+                onBack: () => ctx.pop(),
+              ),
+            ),
+          ],
         ),
       ],
     );

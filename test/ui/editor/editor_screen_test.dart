@@ -517,5 +517,33 @@ void main() {
 
       expect(tornatoIndietro, isTrue);
     });
+
+    testWidgets(
+      'Anteprima PDF invoca onPreview con l\'id della variante (ticket 27)',
+      (tester) async {
+        final repo = InMemoryCvRepository();
+        final id = await _seed(repo, const []);
+        String? richiesto;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(size: _wideSize),
+              child: EditorScreen(
+                variantId: id,
+                repository: repo,
+                onPreview: (v) => richiesto = v,
+              ),
+            ),
+          ),
+        );
+        await _settle(tester);
+
+        await tester.tap(find.byKey(const Key('editor_preview_pdf')));
+        await tester.pump();
+
+        expect(richiesto, id);
+      },
+    );
   });
 }

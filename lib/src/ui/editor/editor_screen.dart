@@ -13,12 +13,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/cv_section.dart';
-import '../../pdf/filename_sanitizer.dart';
 import '../../pdf/pdf_delivery.dart';
 import '../../pdf/pdf_exporter.dart';
 import '../../repository/cv_repository.dart';
+import '../pdf_export_flow.dart';
 import 'editor_bloc.dart';
 import 'widgets/add_section_dialog.dart';
 import 'widgets/anagrafica_form.dart';
@@ -27,7 +28,6 @@ import 'widgets/contatti_form.dart';
 import 'widgets/custom_section_form.dart';
 import 'widgets/editable_text_field.dart';
 import 'widgets/esperienze_form.dart';
-import 'widgets/export_pdf_dialog.dart';
 import 'widgets/formazione_form.dart';
 import 'widgets/lingue_form.dart';
 import 'widgets/section_shell.dart';
@@ -48,6 +48,7 @@ class EditorScreen extends StatelessWidget {
     required this.variantId,
     required this.repository,
     this.onBack,
+    this.onPreview,
     this.pdfExporter = const DefaultPdfExporter(),
     this.pdfDelivery,
   });
@@ -55,6 +56,12 @@ class EditorScreen extends StatelessWidget {
   final String variantId;
   final CvRepository repository;
   final VoidCallback? onBack;
+
+  /// Chiamato con l'id della variante quando l'utente preme `Anteprima
+  /// PDF` (ticket 27). Iniettabile per i test; `null` risolve alla
+  /// navigazione reale via `go_router` (`ctx.push`), che richiede un
+  /// `GoRouter` ancestor non sempre presente nei widget test.
+  final ValueChanged<String>? onPreview;
 
   /// Iniettabile per i test; di default il template Classico via `pdf`.
   final PdfExporter pdfExporter;
@@ -70,6 +77,7 @@ class EditorScreen extends StatelessWidget {
           EditorBloc(repository: repository)..add(EditorStarted(variantId)),
       child: _EditorView(
         onBack: onBack,
+        onPreview: onPreview,
         pdfExporter: pdfExporter,
         pdfDelivery: pdfDelivery,
       ),
@@ -78,8 +86,14 @@ class EditorScreen extends StatelessWidget {
 }
 
 class _EditorView extends StatelessWidget {
-  const _EditorView({this.onBack, required this.pdfExporter, this.pdfDelivery});
+  const _EditorView({
+    this.onBack,
+    this.onPreview,
+    required this.pdfExporter,
+    this.pdfDelivery,
+  });
   final VoidCallback? onBack;
+  final ValueChanged<String>? onPreview;
   final PdfExporter pdfExporter;
   final PdfDelivery? pdfDelivery;
 
@@ -115,6 +129,7 @@ class _EditorView extends StatelessWidget {
             EditorReady() => _EditorReadyView(
               state: state,
               onBack: onBack,
+              onPreview: onPreview,
               pdfExporter: pdfExporter,
               pdfDelivery: pdfDelivery,
             ),
@@ -129,11 +144,13 @@ class _EditorReadyView extends StatefulWidget {
   const _EditorReadyView({
     required this.state,
     this.onBack,
+    this.onPreview,
     required this.pdfExporter,
     this.pdfDelivery,
   });
   final EditorReady state;
   final VoidCallback? onBack;
+  final ValueChanged<String>? onPreview;
   final PdfExporter pdfExporter;
   final PdfDelivery? pdfDelivery;
 
@@ -162,6 +179,7 @@ class _EditorReadyViewState extends State<_EditorReadyView> {
         state: state,
         wide: wide,
         onBack: widget.onBack,
+        onPreview: widget.onPreview,
         keyFor: _keyFor,
         pdfExporter: widget.pdfExporter,
         pdfDelivery: widget.pdfDelivery,
@@ -181,6 +199,7 @@ class _EditorTopBar extends StatelessWidget implements PreferredSizeWidget {
     required this.wide,
     required this.keyFor,
     this.onBack,
+    this.onPreview,
     required this.pdfExporter,
     this.pdfDelivery,
   });
@@ -189,6 +208,7 @@ class _EditorTopBar extends StatelessWidget implements PreferredSizeWidget {
   final bool wide;
   final SectionKeyLookup keyFor;
   final VoidCallback? onBack;
+  final ValueChanged<String>? onPreview;
   final PdfExporter pdfExporter;
   final PdfDelivery? pdfDelivery;
 
@@ -223,11 +243,22 @@ class _EditorTopBar extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: 8,
       actions: [
         IconButton(
+          key: const Key('editor_preview_pdf'),
+          tooltip: 'Anteprima PDF',
+          icon: const Icon(Icons.visibility_outlined),
+          onPressed: () => _handlePreview(context, state, onPreview),
+        ),
+        IconButton(
           key: const Key('editor_export_pdf'),
           tooltip: 'Esporta PDF',
           icon: const Icon(Icons.picture_as_pdf_outlined),
-          onPressed: () =>
-              _handleExport(context, state, pdfExporter, pdfDelivery),
+          onPressed: () => runPdfExportFlow(
+            context,
+            document: state.document,
+            missing: state.missing,
+            pdfExporter: pdfExporter,
+            pdfDelivery: pdfDelivery,
+          ),
         ),
         _SaveIndicator(status: state.saveStatus, dirty: state.dirty),
         const SizedBox(width: 12),
@@ -236,52 +267,15 @@ class _EditorTopBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-Future<void> _handleExport(
+void _handlePreview(
   BuildContext context,
   EditorReady state,
-  PdfExporter pdfExporter,
-  PdfDelivery? pdfDelivery,
-) async {
-  final choice = await showExportPdfDialog(
-    context,
-    document: state.document,
-    missing: state.missing,
-  );
-  if (choice == null || !context.mounted) return;
-
-  showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => const Center(child: CircularProgressIndicator()),
-  );
-
-  DeliveryResult result;
-  try {
-    final bytes = await pdfExporter.render(
-      document: state.document,
-      template: choice.template,
-      labelLocale: choice.labelLocale,
-    );
-    final suggestedName = '${sanitizeFileName(state.document.variantName)}.pdf';
-    result = await (pdfDelivery ?? defaultPdfDelivery()).deliver(
-      bytes,
-      suggestedName,
-    );
-  } catch (e) {
-    result = DeliveryError(e.toString());
-  }
-
-  if (!context.mounted) return;
-  Navigator.of(context, rootNavigator: true).pop();
-
-  final message = switch (result) {
-    DeliverySuccess() => null,
-    DeliveryCancelled() => null,
-    DeliveryError(:final message) => 'Export PDF fallito: $message',
-  };
-  if (message != null) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+  ValueChanged<String>? onPreview,
+) {
+  if (onPreview != null) {
+    onPreview(state.document.id);
+  } else {
+    context.push('/editor/${state.document.id}/preview');
   }
 }
 
