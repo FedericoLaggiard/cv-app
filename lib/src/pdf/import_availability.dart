@@ -28,6 +28,7 @@ class ImportAvailability {
     final cached = _available;
     if (cached != null) return cached;
     try {
+      await pdfrxFlutterInitialize();
       final doc = await PdfDocument.createNew(sourceName: 'availability_probe');
       await doc.dispose();
       _available = true;

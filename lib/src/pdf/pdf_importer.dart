@@ -72,6 +72,7 @@ class PdfImporter {
   const PdfImporter();
 
   Future<ImportOutcome> import(Uint8List bytes, {String? password}) async {
+    await pdfrx.pdfrxFlutterInitialize();
     pdfrx.PdfDocument document;
     try {
       document = await pdfrx.PdfDocument.openData(
