@@ -9,6 +9,7 @@ import 'dart:typed_data';
 
 import 'package:cv_app/src/domain/cv_document.dart';
 import 'package:cv_app/src/domain/cv_section.dart';
+import 'package:cv_app/src/pdf/import_proposal_report.dart';
 import 'package:cv_app/src/pdf/pdf_importer.dart';
 import 'package:cv_app/src/repository/in_memory_cv_repository.dart';
 import 'package:cv_app/src/ui/library/library_cubit.dart';
@@ -64,17 +65,17 @@ class _StallingImporter extends PdfImporter {
 }
 
 CvDocument _filledDoc({String email = 'mario@example.com'}) => CvDocument(
-      id: 'from-importer',
-      createdAt: DateTime.utc(2000),
-      updatedAt: DateTime.utc(2000),
-      variantName: 'ignored-by-flow',
-      sections: [
-        ContattiSection(
-          displayTitle: 'Contatti',
-          data: ContattiData(email: email),
-        ),
-      ],
-    );
+  id: 'from-importer',
+  createdAt: DateTime.utc(2000),
+  updatedAt: DateTime.utc(2000),
+  variantName: 'ignored-by-flow',
+  sections: [
+    ContattiSection(
+      displayTitle: 'Contatti',
+      data: ContattiData(email: email),
+    ),
+  ],
+);
 
 Widget _harness({
   required InMemoryCvRepository repo,
@@ -107,7 +108,7 @@ Widget _harness({
 
 void main() {
   group('runPdfImportFlow — filled', () {
-    testWidgets('creates a variant named after the file and opens it', (
+    testWidgets('opens the review step, and confirming creates the variant', (
       tester,
     ) async {
       final repo = InMemoryCvRepository();
@@ -117,15 +118,28 @@ void main() {
           repo: repo,
           onOpenVariant: (id) => openedId = id,
           pickFile: () => _pick('Mario Rossi CV.pdf'),
-          importer: _ScriptedImporter([ImportOutcome.filled(_filledDoc())]),
+          importer: _ScriptedImporter([
+            ImportOutcome.filled(
+              _filledDoc(),
+              const ImportProposalReport.empty(),
+            ),
+          ]),
         ),
       );
       await tester.tap(find.byKey(const Key('start_import')));
       await _pumpUntilLoadingGone(tester);
 
+      expect(find.text('Rivedi import'), findsOneWidget);
+      expect(openedId, isNull);
+      expect(await tester.runAsync(() => repo.watchAll().first), isEmpty);
+
+      await tester.tap(find.byKey(const Key('import_review_confirm')));
+      await tester.pumpAndSettle();
+
       expect(openedId, isNotNull);
-      // `testWidgets` runs its body in a fake-async zone: a raw `Stream.first`
-      // read never resolves without `runAsync` breaking out to real async.
+      // `testWidgets` runs its body in a fake-async zone: a raw
+      // `Stream.first` read never resolves without `runAsync` breaking out
+      // to real async.
       final variants = await tester.runAsync(() => repo.watchAll().first);
       expect(variants!.single.variantName, 'Mario Rossi CV');
       final doc = await tester.runAsync(() => repo.watch(openedId!).first);
@@ -133,6 +147,34 @@ void main() {
         doc!.sections.whereType<ContattiSection>().single.data.email,
         'mario@example.com',
       );
+    });
+
+    testWidgets('cancelling the review step creates no variant', (
+      tester,
+    ) async {
+      final repo = InMemoryCvRepository();
+      var opened = false;
+      await tester.pumpWidget(
+        _harness(
+          repo: repo,
+          onOpenVariant: (_) => opened = true,
+          pickFile: () => _pick('Mario Rossi CV.pdf'),
+          importer: _ScriptedImporter([
+            ImportOutcome.filled(
+              _filledDoc(),
+              const ImportProposalReport.empty(),
+            ),
+          ]),
+        ),
+      );
+      await tester.tap(find.byKey(const Key('start_import')));
+      await _pumpUntilLoadingGone(tester);
+
+      await tester.tap(find.byKey(const Key('import_review_cancel')));
+      await tester.pumpAndSettle();
+
+      expect(opened, isFalse);
+      expect(await tester.runAsync(() => repo.watchAll().first), isEmpty);
     });
   });
 
@@ -154,7 +196,9 @@ void main() {
       await _pumpUntilLoadingGone(tester);
 
       expect(find.text('PDF scansionato'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('pdf_import_scanned_from_scratch')));
+      await tester.tap(
+        find.byKey(const Key('pdf_import_scanned_from_scratch')),
+      );
       await tester.pumpAndSettle();
 
       expect(openedId, isNotNull);
@@ -218,7 +262,10 @@ void main() {
       final importer = _ScriptedImporter([
         const ImportOutcome.encrypted(), // first attempt, no password
         const ImportOutcome.encrypted(), // wrong password
-        ImportOutcome.filled(_filledDoc()), // correct password
+        ImportOutcome.filled(
+          _filledDoc(),
+          const ImportProposalReport.empty(),
+        ), // correct password
       ]);
       await tester.pumpWidget(
         _harness(
@@ -248,6 +295,10 @@ void main() {
       await tester.tap(find.byKey(const Key('pdf_import_password_submit')));
       await _pumpUntilLoadingGone(tester);
 
+      expect(find.text('Rivedi import'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('import_review_confirm')));
+      await tester.pumpAndSettle();
+
       expect(openedId, isNotNull);
       expect(importer.passwordsSeen, [null, 'wrong', 'correct']);
     });
@@ -273,7 +324,9 @@ void main() {
       await tester.tap(find.byKey(const Key('pdf_import_cancel_loading')));
       await tester.pumpAndSettle();
 
-      importer.complete(ImportOutcome.filled(_filledDoc()));
+      importer.complete(
+        ImportOutcome.filled(_filledDoc(), const ImportProposalReport.empty()),
+      );
       await tester.pumpAndSettle();
 
       expect(opened, isFalse);

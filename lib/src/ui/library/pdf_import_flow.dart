@@ -1,5 +1,7 @@
 /// "Da PDF esistente" flow (ticket 28): file picker → [PdfImporter] →
 /// scanned/encrypted/empty/filled handling → new variant → open editor.
+/// A filled import goes through the review step (`import_review_screen.dart`,
+/// ticket 52) first: the variant is only created if the user confirms there.
 ///
 /// Mirrors the `showNewVariantNameDialog`/`_handleDuplicateFromNew` pattern
 /// already used by `library_screen.dart`/`library_dialogs.dart` for the
@@ -17,6 +19,7 @@ import 'package:uuid/uuid.dart';
 import '../../domain/cv_document.dart';
 import '../../pdf/filename_sanitizer.dart';
 import '../../pdf/pdf_importer.dart';
+import 'import_review_screen.dart';
 import 'library_cubit.dart';
 
 /// Bytes + display name of the PDF chosen by the user.
@@ -98,12 +101,22 @@ Future<void> runPdfImportFlow(
           doc: _emptyNamedDocument(baseName),
         );
         return;
-      case FilledOutcome(:final doc):
+      case FilledOutcome(:final doc, :final report):
+        if (!context.mounted) return;
+        final reviewed = await Navigator.of(context).push<CvDocument>(
+          MaterialPageRoute(
+            builder: (_) => ImportReviewScreen(
+              doc: doc.copyWith(variantName: baseName),
+              report: report,
+            ),
+          ),
+        );
+        if (reviewed == null || !context.mounted) return; // annullato
         await _createAndOpen(
           context,
           cubit: cubit,
           onOpenVariant: onOpenVariant,
-          doc: doc.copyWith(variantName: baseName),
+          doc: reviewed,
         );
         return;
     }

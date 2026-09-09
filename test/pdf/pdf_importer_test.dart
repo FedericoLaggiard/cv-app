@@ -29,25 +29,35 @@ void main() {
       expect(outcome, isA<ScannedOutcome>());
     });
 
-    test('media caratteri/pagina sopra soglia -> filled, heuristics applicate', () {
-      final page = PdfPageText(
-        pageIndex: 0,
-        chars: [
-          const PdfCharRect(
-            text: 'mario.rossi@example.com',
-            x: 0,
-            y: 0,
-            width: 100,
-            height: 10,
-          ),
-        ],
-      );
-      final outcome = classifyOutcome(totalChars: 150, pageCount: 1, pages: [page]);
-      expect(outcome, isA<FilledOutcome>());
-      final contatti =
-          (outcome as FilledOutcome).doc.sections.whereType<ContattiSection>().single;
-      expect(contatti.data.email, 'mario.rossi@example.com');
-    });
+    test(
+      'media caratteri/pagina sopra soglia -> filled, heuristics applicate',
+      () {
+        final page = PdfPageText(
+          pageIndex: 0,
+          chars: [
+            const PdfCharRect(
+              text: 'mario.rossi@example.com',
+              x: 0,
+              y: 0,
+              width: 100,
+              height: 10,
+            ),
+          ],
+        );
+        final outcome = classifyOutcome(
+          totalChars: 150,
+          pageCount: 1,
+          pages: [page],
+        );
+        expect(outcome, isA<FilledOutcome>());
+        final filled = outcome as FilledOutcome;
+        final contatti = filled.doc.sections
+            .whereType<ContattiSection>()
+            .single;
+        expect(contatti.data.email, 'mario.rossi@example.com');
+        expect(filled.report.forField('contatti.email')?.certain, true);
+      },
+    );
 
     test('soglia esatta (>= 100) conta come filled, non scanned', () {
       final outcome = classifyOutcome(

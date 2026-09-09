@@ -16,21 +16,29 @@ import 'dart:typed_data';
 import 'package:pdfrx/pdfrx.dart' as pdfrx;
 
 import '../domain/cv_document.dart';
+import 'import_proposal_report.dart';
 import 'pdf_import_heuristics.dart' as heuristics;
 
 /// Result of [PdfImporter.import].
 sealed class ImportOutcome {
   const ImportOutcome();
 
-  const factory ImportOutcome.filled(CvDocument doc) = FilledOutcome;
+  const factory ImportOutcome.filled(
+    CvDocument doc,
+    ImportProposalReport report,
+  ) = FilledOutcome;
   const factory ImportOutcome.scanned() = ScannedOutcome;
   const factory ImportOutcome.encrypted() = EncryptedOutcome;
   const factory ImportOutcome.empty() = EmptyOutcome;
 }
 
+/// [doc] pairs with the [report] describing the confidence and provenance
+/// of the fields the heuristics proposed (ticket 52, ADR 0002) — [report]
+/// is transient: it feeds the review step and is discarded on confirm.
 class FilledOutcome extends ImportOutcome {
   final CvDocument doc;
-  const FilledOutcome(this.doc);
+  final ImportProposalReport report;
+  const FilledOutcome(this.doc, this.report);
 }
 
 class ScannedOutcome extends ImportOutcome {
@@ -65,7 +73,8 @@ ImportOutcome classifyOutcome({
   if (avgCharsPerPage < _scannedAvgCharsPerPageThreshold) {
     return const ImportOutcome.scanned();
   }
-  return ImportOutcome.filled(heuristics.buildFromPages(pages));
+  final (doc, report) = heuristics.buildFromPages(pages);
+  return ImportOutcome.filled(doc, report);
 }
 
 class PdfImporter {
