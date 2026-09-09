@@ -119,18 +119,50 @@ final RegExp _urlRe = RegExp(
 // -------------------- Date parsing --------------------
 
 const Map<String, int> _monthNames = {
-  'gennaio': 1, 'gen': 1, 'january': 1, 'jan': 1,
-  'febbraio': 2, 'feb': 2, 'february': 2,
-  'marzo': 3, 'mar': 3, 'march': 3,
-  'aprile': 4, 'apr': 4, 'april': 4,
-  'maggio': 5, 'mag': 5, 'may': 5,
-  'giugno': 6, 'giu': 6, 'june': 6, 'jun': 6,
-  'luglio': 7, 'lug': 7, 'july': 7, 'jul': 7,
-  'agosto': 8, 'ago': 8, 'august': 8, 'aug': 8,
-  'settembre': 9, 'set': 9, 'sep': 9, 'september': 9, 'sept': 9,
-  'ottobre': 10, 'ott': 10, 'october': 10, 'oct': 10,
-  'novembre': 11, 'nov': 11, 'november': 11,
-  'dicembre': 12, 'dic': 12, 'december': 12, 'dec': 12,
+  'gennaio': 1,
+  'gen': 1,
+  'january': 1,
+  'jan': 1,
+  'febbraio': 2,
+  'feb': 2,
+  'february': 2,
+  'marzo': 3,
+  'mar': 3,
+  'march': 3,
+  'aprile': 4,
+  'apr': 4,
+  'april': 4,
+  'maggio': 5,
+  'mag': 5,
+  'may': 5,
+  'giugno': 6,
+  'giu': 6,
+  'june': 6,
+  'jun': 6,
+  'luglio': 7,
+  'lug': 7,
+  'july': 7,
+  'jul': 7,
+  'agosto': 8,
+  'ago': 8,
+  'august': 8,
+  'aug': 8,
+  'settembre': 9,
+  'set': 9,
+  'sep': 9,
+  'september': 9,
+  'sept': 9,
+  'ottobre': 10,
+  'ott': 10,
+  'october': 10,
+  'oct': 10,
+  'novembre': 11,
+  'nov': 11,
+  'november': 11,
+  'dicembre': 12,
+  'dic': 12,
+  'december': 12,
+  'dec': 12,
 };
 
 const List<String> _currentMarkers = [
@@ -225,6 +257,16 @@ ParsedDateRange? tryParseDateRangeLine(String line) {
 /// item's date-range line for grouping purposes.
 bool looksLikeDateRangeLine(String line) => tryParseDateRangeLine(line) != null;
 
+/// True if [text] matches one of the known section-title synonyms
+/// case-insensitively, regardless of its geometry. Exposed (ticket 50) so
+/// the conversion-rate corpus test can tell a heading line — structurally
+/// consumed by [buildFromPages], never "lost" — apart from a line that
+/// truly went unaccounted for.
+bool isRecognizedSectionHeading(String text) {
+  final normalized = text.trim().toLowerCase();
+  return _sectionTitleSynonyms.values.any((s) => s.contains(normalized));
+}
+
 // -------------------- Contact extraction --------------------
 
 ContattiData _extractContacts(String fullText) {
@@ -252,11 +294,7 @@ ContattiData _extractContacts(String fullText) {
 
   final phoneMatch = _findPhone(fullText, email);
 
-  return ContattiData(
-    email: email,
-    telefono: phoneMatch,
-    link: links,
-  );
+  return ContattiData(email: email, telefono: phoneMatch, link: links);
 }
 
 String _withScheme(String url) =>
@@ -265,7 +303,9 @@ String _withScheme(String url) =>
 String? _findPhone(String fullText, String? email) {
   // Strip the email first so its digits (if any) never get mistaken for a
   // phone number.
-  final withoutEmail = email == null ? fullText : fullText.replaceAll(email, '');
+  final withoutEmail = email == null
+      ? fullText
+      : fullText.replaceAll(email, '');
   for (final match in _phoneRe.allMatches(withoutEmail)) {
     final candidate = match.group(0)!.trim();
     final digitCount = candidate.replaceAll(RegExp(r'\D'), '').length;
@@ -442,7 +482,11 @@ CvDocument buildFromPages(List<PdfPageText> pages) {
   final review = reviewBuffer.toString().trim();
   if (review.isNotEmpty) {
     sections.add(
-      CustomSection(id: _uuid.v4(), displayTitle: 'Da rivedere', markdown: review),
+      CustomSection(
+        id: _uuid.v4(),
+        displayTitle: 'Da rivedere',
+        markdown: review,
+      ),
     );
   }
 

@@ -1,0 +1,33 @@
+{
+  "layoutFamily": "single_column",
+  "pages": [
+    {
+      "pageIndex": 0,
+      "lines": [
+        { "text": "Anna Bianchi", "height": 11.0 },
+        { "text": "Sviluppatrice Software", "height": 11.0 },
+        { "text": "anna.bianchi83@example-mail.com", "height": 11.0 },
+        { "text": "+39 345 1122334", "height": 11.0 },
+        { "text": "Via Roma 12, Milano", "height": 11.0 },
+        { "text": "linkedin.com/in/annabianchi83", "height": 11.0 },
+        { "text": "ESPERIENZE PROFESSIONALI", "height": 11.0 },
+        { "text": "Marzo 2021 - in corso", "height": 11.0 },
+        { "text": "Sviluppatrice Backend presso TechCorp Srl", "height": 11.0 },
+        { "text": "Sviluppo di API REST in Dart e gestione di pipeline CI/CD.", "height": 11.0 },
+        { "text": "Giugno 2018 - Febbraio 2021", "height": 11.0 },
+        { "text": "Sviluppatrice Junior presso WebSoft Italia", "height": 11.0 },
+        { "text": "Manutenzione di applicazioni web Java e supporto al team QA.", "height": 11.0 },
+        { "text": "Formazione e istruzione", "height": 11.0 },
+        { "text": "Settembre 2015 - Luglio 2018", "height": 11.0 },
+        { "text": "Laurea in Informatica, Universita di Bologna", "height": 11.0 },
+        { "text": "Tesi su algoritmi di ottimizzazione combinatoria.", "height": 11.0 },
+        { "text": "Lingue", "height": 11.0 },
+        { "text": "Italiano - Madrelingua", "height": 11.0 },
+        { "text": "Inglese - B2", "height": 11.0 },
+        { "text": "Certificazioni", "height": 11.0 },
+        { "text": "AWS Certified Cloud Practitioner", "height": 11.0 },
+        { "text": "Scrum Fundamentals Certified", "height": 11.0 }
+      ]
+    }
+  ]
+}
