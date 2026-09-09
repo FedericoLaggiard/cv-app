@@ -19,6 +19,7 @@ import '../domain/cv_document.dart';
 import '../domain/cv_section.dart';
 import '../domain/enums.dart';
 import '../domain/year_month.dart';
+import 'import_proposal_report.dart';
 
 const _uuid = Uuid();
 
@@ -340,8 +341,14 @@ bool isRecognizedSectionHeading(String text) {
 
 // -------------------- Contact extraction --------------------
 
-ContattiData _extractContacts(String fullText) {
+ContattiData _extractContacts(
+  String fullText,
+  ImportProposalReportBuilder report,
+) {
   final email = _emailRe.firstMatch(fullText)?.group(0);
+  if (email != null) {
+    report.add('contatti.email', certain: true, sourceLines: [email]);
+  }
   final links = <Link>[];
 
   final linkedin = _linkedinRe.firstMatch(fullText)?.group(0);
@@ -364,6 +371,9 @@ ContattiData _extractContacts(String fullText) {
   }
 
   final phoneMatch = _findPhone(fullText, email);
+  if (phoneMatch != null) {
+    report.add('contatti.telefono', certain: true, sourceLines: [phoneMatch]);
+  }
 
   return ContattiData(email: email, telefono: phoneMatch, link: links);
 }
@@ -520,15 +530,18 @@ List<List<String>> _groupIntoBlocks(List<String> lines) {
 // -------------------- Public entry point --------------------
 
 /// Builds a best-effort [CvDocument] from extracted PDF pages, following
-/// ticket 13's conservative signal-first / section-first strategy.
-CvDocument buildFromPages(List<PdfPageText> pages) {
+/// ticket 13's conservative signal-first / section-first strategy, together
+/// with the [ImportProposalReport] (ticket 52) describing the confidence and
+/// provenance of every field it proposed.
+(CvDocument, ImportProposalReport) buildFromPages(List<PdfPageText> pages) {
   final now = DateTime.now();
   final fullText = pages.map((p) => p.plainText).join('\n');
   final flat = _flatten(pages);
+  final report = ImportProposalReportBuilder();
 
   final sections = <CvSection>[];
 
-  final contacts = _extractContacts(fullText);
+  final contacts = _extractContacts(fullText, report);
   if (contacts.email != null ||
       contacts.telefono != null ||
       contacts.link.isNotEmpty) {
@@ -536,12 +549,15 @@ CvDocument buildFromPages(List<PdfPageText> pages) {
   }
 
   if (flat.isEmpty) {
-    return CvDocument(
-      id: _uuid.v4(),
-      createdAt: now,
-      updatedAt: now,
-      variantName: '',
-      sections: sections,
+    return (
+      CvDocument(
+        id: _uuid.v4(),
+        createdAt: now,
+        updatedAt: now,
+        variantName: '',
+        sections: sections,
+      ),
+      report.build(),
     );
   }
 
@@ -572,11 +588,11 @@ CvDocument buildFromPages(List<PdfPageText> pages) {
 
       switch (section.kind) {
         case SectionKind.esperienze:
-          sections.add(_buildEsperienze(bodyLines, reviewBuffer));
+          sections.add(_buildEsperienze(bodyLines, reviewBuffer, report));
         case SectionKind.formazione:
-          sections.add(_buildFormazione(bodyLines, reviewBuffer));
+          sections.add(_buildFormazione(bodyLines, reviewBuffer, report));
         case SectionKind.certificazioni:
-          sections.add(_buildCertificazioni(bodyLines));
+          sections.add(_buildCertificazioni(bodyLines, report));
         case SectionKind.lingue:
         case SectionKind.sommario:
         case SectionKind.skill:
@@ -609,18 +625,22 @@ CvDocument buildFromPages(List<PdfPageText> pages) {
     );
   }
 
-  return CvDocument(
-    id: _uuid.v4(),
-    createdAt: now,
-    updatedAt: now,
-    variantName: '',
-    sections: sections,
+  return (
+    CvDocument(
+      id: _uuid.v4(),
+      createdAt: now,
+      updatedAt: now,
+      variantName: '',
+      sections: sections,
+    ),
+    report.build(),
   );
 }
 
 EsperienzeSection _buildEsperienze(
   List<String> bodyLines,
   StringBuffer reviewBuffer,
+  ImportProposalReportBuilder report,
 ) {
   final blocks = _groupIntoBlocks(bodyLines);
   final items = <EsperienzaItem>[];
@@ -638,6 +658,19 @@ EsperienzeSection _buildEsperienze(
       for (var i = 0; i < block.length; i++)
         if (i != dateLineIdx) block[i],
     ];
+    final index = items.length;
+    report.add(
+      'esperienze[$index].dateRange',
+      certain: true,
+      sourceLines: [block[dateLineIdx]],
+    );
+    if (descriptionLines.isNotEmpty) {
+      report.add(
+        'esperienze[$index].descrizione',
+        certain: true,
+        sourceLines: descriptionLines,
+      );
+    }
     items.add(
       EsperienzaItem(
         id: _uuid.v4(),
@@ -658,6 +691,7 @@ EsperienzeSection _buildEsperienze(
 FormazioneSection _buildFormazione(
   List<String> bodyLines,
   StringBuffer reviewBuffer,
+  ImportProposalReportBuilder report,
 ) {
   final blocks = _groupIntoBlocks(bodyLines);
   final items = <FormazioneItem>[];
@@ -675,6 +709,19 @@ FormazioneSection _buildFormazione(
       for (var i = 0; i < block.length; i++)
         if (i != dateLineIdx) block[i],
     ];
+    final index = items.length;
+    report.add(
+      'formazione[$index].dateRange',
+      certain: true,
+      sourceLines: [block[dateLineIdx]],
+    );
+    if (descriptionLines.isNotEmpty) {
+      report.add(
+        'formazione[$index].descrizione',
+        certain: true,
+        sourceLines: descriptionLines,
+      );
+    }
     items.add(
       FormazioneItem(
         id: _uuid.v4(),
@@ -708,14 +755,22 @@ CustomSection? _buildUnstructuredCustomSection(
   );
 }
 
-CertificazioniSection _buildCertificazioni(List<String> bodyLines) {
+CertificazioniSection _buildCertificazioni(
+  List<String> bodyLines,
+  ImportProposalReportBuilder report,
+) {
   // Conservative: each non-empty line becomes a certification named after
   // itself, with no auto-filled dates (free-text certification lines rarely
   // isolate a date cleanly enough to trust).
-  final items = <CertificazioneItem>[
-    for (final line in bodyLines)
-      if (line.trim().isNotEmpty)
-        CertificazioneItem(id: _uuid.v4(), nome: line.trim(), ente: ''),
-  ];
+  final items = <CertificazioneItem>[];
+  for (final line in bodyLines) {
+    if (line.trim().isEmpty) continue;
+    report.add(
+      'certificazioni[${items.length}].nome',
+      certain: true,
+      sourceLines: [line.trim()],
+    );
+    items.add(CertificazioneItem(id: _uuid.v4(), nome: line.trim(), ente: ''));
+  }
   return CertificazioniSection(displayTitle: 'Certificazioni', items: items);
 }

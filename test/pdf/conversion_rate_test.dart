@@ -38,7 +38,7 @@ void main() {
   group('tasso di conversione', () {
     for (final entry in corpus) {
       test('${entry.name} (${entry.fixture.layoutFamily.wire})', () {
-        final doc = buildFromPages(entry.fixture.toPages());
+        final (doc, _) = buildFromPages(entry.fixture.toPages());
         final proposed = flattenDocument(doc);
         final score = scoreConversion(
           expected: entry.golden.fields,
@@ -76,7 +76,7 @@ void main() {
   group('invariante: nessuna riga persa', () {
     for (final entry in corpus) {
       test(entry.name, () {
-        final doc = buildFromPages(entry.fixture.toPages());
+        final (doc, _) = buildFromPages(entry.fixture.toPages());
         final lost = findLostLines(entry.fixture.allLines, doc);
         expect(
           lost,

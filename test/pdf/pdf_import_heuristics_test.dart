@@ -106,7 +106,7 @@ void main() {
 
   group('buildFromPages — contatti (signal-first)', () {
     test('estrae email, telefono, LinkedIn, GitHub e URL generico', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page([
           'Mario Rossi',
           'mario.rossi@example.com',
@@ -132,7 +132,7 @@ void main() {
     });
 
     test('nessun segnale di contatto -> nessuna sezione Contatti', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(['Testo qualunque senza contatti riconoscibili']),
       ]);
       expect(doc.sections.whereType<ContattiSection>(), isEmpty);
@@ -141,7 +141,7 @@ void main() {
 
   group('buildFromPages — sezione Esperienze', () {
     test('3 item separati da righe data', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(
           [
             'Esperienze', // heading
@@ -212,7 +212,7 @@ void main() {
         ],
       );
 
-      final doc = buildFromPages([pageA, pageB]);
+      final (doc, _) = buildFromPages([pageA, pageB]);
 
       expect(
         doc.sections.whereType<EsperienzeSection>().single.items,
@@ -225,7 +225,7 @@ void main() {
     });
 
     test('non riempie mai ruolo/azienda/titolo/istituto', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(
           [
             'Esperienze',
@@ -257,7 +257,7 @@ void main() {
 
   group('buildFromPages — fallback anti-disastro', () {
     test('meno di 2 titoli riconosciuti -> tutto in "Da rivedere"', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page([
           'Un CV con un solo titolo riconosciuto',
           'Esperienze',
@@ -272,12 +272,12 @@ void main() {
     });
 
     test('pagina vuota -> nessuna sezione', () {
-      final doc = buildFromPages([page([])]);
+      final (doc, _) = buildFromPages([page([])]);
       expect(doc.sections, isEmpty);
     });
 
     test('PDF con soli link -> sezione Contatti popolata', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(['mariorossi.dev', 'github.com/mariorossi']),
       ]);
       final contatti = doc.sections.whereType<ContattiSection>().single;
@@ -287,7 +287,7 @@ void main() {
 
   group('buildFromPages — item non riconosciuto finisce in Da rivedere', () {
     test('blocco Esperienze senza data riconoscibile', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(
           [
             'Esperienze',
@@ -312,7 +312,7 @@ void main() {
 
   group('buildFromPages — link spazzatura (ticket 51)', () {
     test('una riga skill reale del corpus non produce link', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page([
           '• Web & Backend: JavaScript (ES6+), React.js, Redux, Redux-Saga, '
               'Node.js, Vue.js, HTML5, CSS3, JSON/XML',
@@ -323,14 +323,14 @@ void main() {
     });
 
     test('un nome puntato non produce link', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(['Istituto A.B. Rossi']),
       ]);
       expect(doc.sections.whereType<ContattiSection>(), isEmpty);
     });
 
     test('un dominio con TLD in allowlist resta riconosciuto', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(['mariorossi.dev']),
       ]);
       final contatti = doc.sections.whereType<ContattiSection>().single;
@@ -340,7 +340,7 @@ void main() {
     test(
       'uno schema http(s) esplicito resta riconosciuto a prescindere dal TLD',
       () {
-        final doc = buildFromPages([
+        final (doc, _) = buildFromPages([
           page(['https://esempio.exotic']),
         ]);
         final contatti = doc.sections.whereType<ContattiSection>().single;
@@ -351,7 +351,7 @@ void main() {
 
   group('buildFromPages — footer/paginazione (ticket 51)', () {
     test('righe "Page N/M" vengono scartate', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(
           [
             'Esperienze',
@@ -381,7 +381,7 @@ void main() {
 
     test('un intervallo di anni "2019-2022" bare non viene scambiato per '
         'paginazione', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(
           [
             'Esperienze',
@@ -402,7 +402,7 @@ void main() {
     });
 
     test('un footer ricorrente identico su più pagine viene scartato', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(
           [
             'Esperienze',
@@ -439,7 +439,7 @@ void main() {
     });
 
     test('una riga non ricorrente in fondo pagina resta nel contenuto', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(
           [
             'Esperienze',
@@ -462,7 +462,7 @@ void main() {
 
   group('buildFromPages — dizionario titoli con "&" (ticket 51)', () {
     test('"EDUCATION & TRAINING" è riconosciuto come Formazione', () {
-      final doc = buildFromPages([
+      final (doc, _) = buildFromPages([
         page(
           [
             'Esperienze',
@@ -487,7 +487,7 @@ void main() {
     'buildFromPages — sezioni riconosciute ma non strutturabili (ticket 51)',
     () {
       test('Sommario diventa una sezione custom col titolo originale', () {
-        final doc = buildFromPages([
+        final (doc, _) = buildFromPages([
           page(
             [
               'ABOUT ME',
@@ -508,7 +508,7 @@ void main() {
       });
 
       test('Skill diventa una sezione custom col titolo originale', () {
-        final doc = buildFromPages([
+        final (doc, _) = buildFromPages([
           page(
             [
               'Esperienze',
@@ -529,7 +529,7 @@ void main() {
       });
 
       test('Lingue diventa una sezione custom col titolo originale', () {
-        final doc = buildFromPages([
+        final (doc, _) = buildFromPages([
           page(
             [
               'Esperienze',
