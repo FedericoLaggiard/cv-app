@@ -6,11 +6,17 @@
 /// so this module is `dart test`-able on its own and portable if the PDF
 /// backend ever changes.
 ///
-/// Philosophy (ticket 13): precision over recall. Never auto-fills
-/// nome/cognome/headline, ruolo/azienda inside an Esperienza, or
-/// titolo/istituto inside a Formazione — those need a human to extract from
-/// the raw description text. Anything not confidently mapped lands in a
-/// single custom section titled "Da rivedere".
+/// Philosophy (ticket 13, amended by ticket 53/Slice P): ticket 13's
+/// original precision-over-recall stance — never auto-filling
+/// nome/cognome/headline, ruolo/azienda, titolo/istituto — was correct only
+/// under pure auto-import, where a wrong field silently lands in a saved CV.
+/// Slice O's review step (`ImportProposalReport`) changed that: a wrong
+/// suggestion now costs a visible correction, not a silent error. This
+/// module now **proposes aggressively** wherever a plausible candidate
+/// exists, and marks every proposal derived from a statistical/majority rule
+/// (rather than an explicit textual match) as `certain: false` so the review
+/// step can flag it. Anything still not confidently mapped lands in a
+/// custom section titled "Da rivedere".
 library;
 
 import 'package:uuid/uuid.dart';
@@ -122,6 +128,88 @@ String _normalizeHeadingText(String text) => text
     .replaceAll('&', ' and ')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
+
+// -------------------- Slice P (ticket 53): aggressive-mapping vocab -------
+
+/// Legal-form markers that signal "this text names a company", used by the
+/// per-document ruolo/azienda ordering vote.
+final RegExp _companyMarkerRe = RegExp(
+  r'\b(Srl|S\.p\.A\.?|S\.r\.l\.?|Spa|Inc\.?|Ltd\.?|GmbH|SA|LLC|Corp\.?)\b',
+);
+
+/// Job-title vocabulary that signals "this text names a role", used by the
+/// per-document ruolo/azienda ordering vote.
+final RegExp _roleVocabRe = RegExp(
+  r'\b(Architect|Engineer|Developer|Manager|Lead(?:er)?|Analyst|'
+  r'Sviluppat(?:ore|rice|ori)|Consulente|Responsabile)\b',
+  caseSensitive: false,
+);
+
+/// Degree vocabulary that signals "this text names a qualification", used
+/// by the per-document titolo/istituto ordering vote.
+final RegExp _degreeVocabRe = RegExp(
+  r'\b(Laurea|Diploma|Bachelor|Master|PhD|Dottorato|Degree)\b',
+  caseSensitive: false,
+);
+
+/// Institution vocabulary that signals "this text names a school", used by
+/// both the titolo/istituto vote and the comma-split explicit pattern.
+/// Deliberately excludes the bare word "School" — too common inside degree
+/// titles themselves (e.g. "Secondary School Diploma") to be a safe marker
+/// on its own; callers that scan a whole line for this pattern should take
+/// the *last* match so a genuine institution name later in the line still
+/// wins over an incidental "School"/"Scuola" earlier in a degree title.
+final RegExp _institutionVocabRe = RegExp(
+  r'\b(Universit[aà]|University|Istituto|Politecnico|College|Academy|'
+  r'Institute|Scuola)\b',
+  caseSensitive: false,
+);
+
+/// `{ruolo} presso {azienda}` / `{ruolo} at {azienda}` — the keyword itself
+/// disambiguates the order, so a match is an explicit (certain) signal, not
+/// a per-document vote. Anchored to the whole line and side lengths capped
+/// so it doesn't fire on an ordinary sentence that happens to contain " at ".
+final RegExp _connectorLineRe = RegExp(
+  r'^(\S(?:.{0,60}\S)?)\s+(?:presso|at)\s+(\S(?:.{0,60}\S)?)$',
+  caseSensitive: false,
+);
+
+/// `{left} | {right}` — the pipe is an explicit separator, but which side is
+/// role vs. company still needs vocabulary or a document-wide vote.
+final RegExp _pipeSplitLineRe = RegExp(r'^(.+?)\s*\|\s*(.+)$');
+
+/// `{titolo}, {istituto}` — comma-separated formazione line.
+final RegExp _commaSplitLineRe = RegExp(r'^(.+?),\s*(.+)$');
+
+/// A block-boundary anchor embedded mid-line rather than alone on its own
+/// line: `{titolo} (2012 – 2020): {descrizione}` (a common "rolled-up
+/// earlier experience" summary pattern). Only years, no months.
+final RegExp _embeddedYearRangeLineRe = RegExp(
+  r'^(.*?)\s*\((\d{4})\s*[\-–—]\s*'
+  r'(\d{4}|present|current|now|oggi|in corso|presente)\)\s*:?\s*(.*)$',
+  caseSensitive: false,
+);
+
+/// CEFR levels plus the "native speaker" marker, used for Lingue parsing.
+final RegExp _cefrLevelRe = RegExp(
+  r'\b(A1|A2|B1|B2|C1|C2)\b|\b(madrelingua|mother tongue)\b',
+  caseSensitive: false,
+);
+
+const Map<String, LivelloCefr> _cefrWireToLevel = {
+  'a1': LivelloCefr.a1,
+  'a2': LivelloCefr.a2,
+  'b1': LivelloCefr.b1,
+  'b2': LivelloCefr.b2,
+  'c1': LivelloCefr.c1,
+  'c2': LivelloCefr.c2,
+};
+
+/// A line with 2+ occurrences of the same repeated separator (`|`, `•`,
+/// `,`) is a skill-tags line (ticket 53 user story 5).
+final RegExp _repeatedPipeRe = RegExp(r'\|.*\|');
+final RegExp _repeatedBulletRe = RegExp(r'•.*•');
+final RegExp _repeatedCommaRe = RegExp(r',.*,');
 
 // -------------------- Contact regexes (signal-first) --------------------
 
@@ -490,41 +578,616 @@ List<_DetectedSection> _detectSectionHeadings(List<_FlatLine> lines) {
   return found;
 }
 
+/// A heading-sized, short, ALL-CAPS line that isn't one of the known
+/// section-title synonyms (ticket 53, item 5): "PROGETTI", "PUBBLICAZIONI".
+/// Requiring ALL-CAPS deliberately keeps this conservative — without it,
+/// synthetic fixtures where every line shares one geometric size (no real
+/// heading/body distinction) would misfire on ordinary short content lines
+/// like a person's name. Contact-ish or date-range lines are excluded too:
+/// they're short by nature but never section titles.
+bool _looksLikeUnrecognizedHeading(_FlatLine line) {
+  if (!line.isHeadingSized) return false;
+  final text = line.text.trim();
+  if (text.isEmpty) return false;
+  if (text != text.toUpperCase() || text == text.toLowerCase()) return false;
+  if (text.split(RegExp(r'\s+')).length > 6) return false;
+  if (isRecognizedSectionHeading(text)) return false;
+  if (looksLikeDateRangeLine(text)) return false;
+  if (_emailRe.hasMatch(text) ||
+      _urlRe.hasMatch(text) ||
+      _phoneRe.hasMatch(text)) {
+    return false;
+  }
+  return true;
+}
+
+/// Every heading boundary in the document, recognized and unrecognized
+/// alike, in document order — the unified list [buildFromPages] walks to
+/// split the body into sections.
+class _HeadingBoundary {
+  final SectionKind? kind;
+  final String originalText;
+  final int startLine;
+  const _HeadingBoundary({
+    this.kind,
+    required this.originalText,
+    required this.startLine,
+  });
+}
+
+List<_HeadingBoundary> _detectAllHeadingBoundaries(List<_FlatLine> lines) {
+  final recognizedLines = <int>{};
+  final found = <_HeadingBoundary>[];
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    if (!line.isHeadingSized) continue;
+    final normalized = _normalizeHeadingText(line.text);
+    for (final entry in _sectionTitleSynonyms.entries) {
+      if (entry.value.contains(normalized)) {
+        found.add(
+          _HeadingBoundary(
+            kind: entry.key,
+            originalText: line.text,
+            startLine: i,
+          ),
+        );
+        recognizedLines.add(i);
+        break;
+      }
+    }
+  }
+  for (var i = 0; i < lines.length; i++) {
+    if (recognizedLines.contains(i)) continue;
+    if (_looksLikeUnrecognizedHeading(lines[i])) {
+      found.add(_HeadingBoundary(originalText: lines[i].text, startLine: i));
+    }
+  }
+  found.sort((a, b) => a.startLine.compareTo(b.startLine));
+  return found;
+}
+
+/// First non-empty line of the document, before any recognized heading:
+/// nome/cognome (ticket 53, item 2). 2–4 capitalized tokens, no digits or
+/// `@`, not itself a section-title synonym. Split convention: first token is
+/// `nome`, the rest is `cognome`. `certain` is `false` once there are more
+/// than 2 tokens — compound names (`Maria Grazia Del Bianco`) will split
+/// wrong and the review step should flag it.
+({String nome, String cognome, bool certain, String sourceLine})?
+_tryExtractName(List<_FlatLine> lines, List<_HeadingBoundary> boundaries) {
+  if (lines.isEmpty) return null;
+  final firstHeadingLine = boundaries.isEmpty
+      ? lines.length
+      : boundaries.map((b) => b.startLine).reduce((a, b) => a < b ? a : b);
+  if (firstHeadingLine == 0) return null;
+
+  final candidate = lines.first.text.trim();
+  if (candidate.contains('@') || RegExp(r'\d').hasMatch(candidate)) return null;
+  if (isRecognizedSectionHeading(candidate)) return null;
+
+  final tokens = candidate.split(RegExp(r'\s+'));
+  if (tokens.length < 2 || tokens.length > 4) return null;
+  final capitalizedRe = RegExp(r'^[A-ZÀ-Ý][\wà-ÿ.\-]*$');
+  if (!tokens.every((t) => capitalizedRe.hasMatch(t))) return null;
+
+  return (
+    nome: tokens.first,
+    cognome: tokens.sublist(1).join(' '),
+    certain: tokens.length == 2,
+    sourceLine: candidate,
+  );
+}
+
 // -------------------- Item grouping --------------------
 
-/// Splits a section's body lines into item blocks: a new item starts at
-/// each line that looks like a date range, falling back to blank-line
-/// separation, falling back to treating the whole block as one item.
-List<List<String>> _groupIntoBlocks(List<String> lines) {
-  if (lines.isEmpty) return [];
+/// Tries to parse a mid-line "rolled-up earlier experience" anchor:
+/// `{titolo} (2012 – 2020): {descrizione}` — years only, no months, and the
+/// title/description live on the same physical line as the range.
+({ParsedDateRange range, String title, String trailing})?
+_tryParseEmbeddedYearRange(String line) {
+  final m = _embeddedYearRangeLineRe.firstMatch(line.trim());
+  if (m == null) return null;
+  final title = m.group(1)!.trim();
+  if (title.isEmpty) return null;
+  final startYear = int.tryParse(m.group(2)!);
+  if (startYear == null) return null;
+  final endToken = m.group(3)!.toLowerCase();
+  final trailing = (m.group(4) ?? '').trim();
+  if (isCurrentMarker(endToken)) {
+    return (
+      range: ParsedDateRange(start: YearMonth(startYear, 1), current: true),
+      title: title,
+      trailing: trailing,
+    );
+  }
+  final endYear = int.tryParse(endToken);
+  if (endYear == null) return null;
+  return (
+    range: ParsedDateRange(
+      start: YearMonth(startYear, 1),
+      end: YearMonth(endYear, 12),
+    ),
+    title: title,
+    trailing: trailing,
+  );
+}
 
-  final dateLineIndices = <int>[
-    for (var i = 0; i < lines.length; i++)
-      if (looksLikeDateRangeLine(lines[i])) i,
-  ];
+enum _AnchorType { standard, embedded }
 
-  if (dateLineIndices.isNotEmpty) {
-    final blocks = <List<String>>[];
-    for (var b = 0; b < dateLineIndices.length; b++) {
-      final start = dateLineIndices[b];
-      final end = b + 1 < dateLineIndices.length
-          ? dateLineIndices[b + 1]
-          : lines.length;
-      blocks.add(lines.sublist(start, end));
+class _Anchor {
+  final int lineIndex;
+  final _AnchorType type;
+  final ParsedDateRange range;
+  final String? embeddedTitle;
+  final String? embeddedTrailing;
+  const _Anchor({
+    required this.lineIndex,
+    required this.type,
+    required this.range,
+    this.embeddedTitle,
+    this.embeddedTrailing,
+  });
+}
+
+List<_Anchor> _findAnchors(List<String> lines) {
+  final anchors = <_Anchor>[];
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    final standard = tryParseDateRangeLine(line);
+    if (standard != null) {
+      anchors.add(
+        _Anchor(lineIndex: i, type: _AnchorType.standard, range: standard),
+      );
+      continue;
     }
-    // Any lines before the first date-range line: keep as their own block
-    // (fallback below decides what to do with them via blank-line rule).
-    if (dateLineIndices.first > 0) {
-      blocks.insert(0, lines.sublist(0, dateLineIndices.first));
+    final embedded = _tryParseEmbeddedYearRange(line);
+    if (embedded != null) {
+      anchors.add(
+        _Anchor(
+          lineIndex: i,
+          type: _AnchorType.embedded,
+          range: embedded.range,
+          embeddedTitle: embedded.title,
+          embeddedTrailing: embedded.trailing,
+        ),
+      );
     }
-    return blocks.where((b) => b.isNotEmpty).toList();
+  }
+  return anchors;
+}
+
+/// One experience/formazione item: the date-anchored block plus the (up to
+/// two) lines immediately preceding its anchor — the candidate ruolo/azienda
+/// (or titolo/istituto) source lines (ticket 53). [ownHeadSubject]/
+/// [ownHeadOrg] cover the opposite layout, where the CV places
+/// "{ruolo} presso {azienda}" right *after* its own date line rather than
+/// before the next one — claimed from the block's own first content line
+/// before it's ever offered to the next block as a preceding-line candidate.
+class _ItemBlock {
+  List<String> precedingLines;
+  final ParsedDateRange range;
+  final String dateSourceLine;
+  final String? embeddedTitle;
+  String? ownHeadSubject;
+  String? ownHeadOrg;
+  String? ownHeadSourceLine;
+  List<String> descriptionLines;
+  _ItemBlock({
+    required this.precedingLines,
+    required this.range,
+    required this.dateSourceLine,
+    this.embeddedTitle,
+    required this.descriptionLines,
+  });
+}
+
+List<String> _takeTrailing(List<String> pool, int max) =>
+    pool.length <= max ? pool : pool.sublist(pool.length - max);
+
+/// Splits a section's body lines into [_ItemBlock]s anchored on date-range
+/// (or embedded-year-range) lines. Lines immediately preceding an anchor are
+/// peeled off the *previous* block's description and offered to the next
+/// block as `precedingLines` — this is what lets ruolo/azienda/titolo/
+/// istituto be read off the lines a CV conventionally places just above the
+/// date, instead of always landing in `descrizione`. Any overflow leading
+/// lines (more than 2 before the very first anchor) are returned separately
+/// for the caller to route to "Da rivedere", same as before this ticket.
+///
+/// [connectorRe]/[splitRe]/[markerRe], when given, are tried against each
+/// block's own first content line *before* that line becomes a
+/// preceding-line candidate for the next block — otherwise a "date, then
+/// {ruolo} presso {azienda}" block (europass_it_01-style) or a "date, then
+/// {titolo}, {istituto}" block would have its own role/company (or
+/// titolo/istituto) line stolen by whatever block follows it (see ticket 53
+/// implementation notes).
+({List<_ItemBlock> blocks, List<String> unclaimedLeading}) _groupIntoItemBlocks(
+  List<String> lines, {
+  RegExp? connectorRe,
+  RegExp? splitRe,
+  RegExp? markerRe,
+  RegExp? subjectVocabRe,
+  RegExp? orgVocabRe,
+}) {
+  if (lines.isEmpty) return (blocks: [], unclaimedLeading: []);
+
+  final anchors = _findAnchors(lines);
+  // No date anchor at all: nothing to structure — the whole body routes to
+  // "Da rivedere" via unclaimedLeading, same as ticket 13's fallback.
+  if (anchors.isEmpty) return (blocks: [], unclaimedLeading: lines);
+
+  final rawContents = <List<String>>[];
+  for (var k = 0; k < anchors.length; k++) {
+    final start = anchors[k].lineIndex + 1;
+    final end = k + 1 < anchors.length
+        ? anchors[k + 1].lineIndex
+        : lines.length;
+    rawContents.add(<String>[for (var i = start; i < end; i++) lines[i]]);
+  }
+  final leading = [for (var i = 0; i < anchors.first.lineIndex; i++) lines[i]];
+
+  final blocks = <_ItemBlock>[];
+  for (var k = 0; k < anchors.length; k++) {
+    final anchor = anchors[k];
+
+    final ownContent = <String>[
+      if ((anchor.embeddedTrailing ?? '').isNotEmpty) anchor.embeddedTrailing!,
+      ...rawContents[k],
+    ];
+    final block = _ItemBlock(
+      precedingLines: const [],
+      range: anchor.range,
+      dateSourceLine: lines[anchor.lineIndex],
+      embeddedTitle: anchor.embeddedTitle,
+      descriptionLines: ownContent,
+    );
+
+    // Own-head claim: only for standard anchors (an embedded anchor already
+    // carries its own title on the anchor line itself).
+    if (anchor.embeddedTitle == null && ownContent.isNotEmpty) {
+      final resolved = _tryExplicitSubjectOrg(
+        ownContent.first,
+        connectorRe: connectorRe,
+        splitRe: splitRe,
+        markerRe: markerRe,
+        subjectVocabRe: subjectVocabRe ?? _neverMatchRe,
+        orgVocabRe: orgVocabRe ?? _neverMatchRe,
+      );
+      if (resolved != null) {
+        block.ownHeadSubject = resolved.subject;
+        block.ownHeadOrg = resolved.org;
+        block.ownHeadSourceLine = ownContent.first;
+        // Deliberately NOT removed from descriptionLines: this line reads
+        // naturally as both the ruolo/azienda (titolo/istituto) source *and*
+        // part of the free-text description (confirmed against the
+        // europass_it_01 golden — unlike a peeled precedingLines window,
+        // which the CV never meant as prose to begin with).
+      }
+    }
+
+    blocks.add(block);
   }
 
-  // Fallback: blank-line separated blocks. Callers pass lines that already
-  // dropped truly-empty strings during flattening, so instead split when a
-  // line looks like a standalone short header (heuristic: <=3 words) — kept
-  // simple: if nothing else works, whole block is one item.
-  return [lines];
+  // Second pass: PEEK (don't remove) up to 2 trailing lines of block
+  // (k-1)'s content after its own-head claim above, as precedingLines
+  // candidates for block k. Nothing is peeled off block (k-1)'s own
+  // description here — a candidate line only leaves `descriptionLines` once
+  // [_resolveSubjectOrgPairs] confirms something actually used it (see
+  // `_applyConsumedPreceding`, called by the section builders after
+  // resolution): most blocks' trailing content is just prose that happens
+  // to be short, not an azienda/istituto line waiting to be claimed.
+  for (var k = 0; k < blocks.length; k++) {
+    final precedingPool = k == 0 ? leading : blocks[k - 1].descriptionLines;
+    blocks[k].precedingLines = _takeTrailing(precedingPool, 2);
+  }
+
+  final unclaimedLeading = leading.length > 2
+      ? leading.sublist(0, leading.length - 2)
+      : <String>[];
+  return (blocks: blocks, unclaimedLeading: unclaimedLeading);
+}
+
+/// Matches nothing — a harmless default for optional vocab regexes so
+/// [_groupIntoItemBlocks] can always pass non-null regexes into
+/// [_tryExplicitSubjectOrg] even when a caller doesn't supply vocab (e.g.
+/// Esperienze's connector-only own-head claim).
+final RegExp _neverMatchRe = RegExp(r'(?!)');
+
+// -------------------- Per-document ruolo/azienda (titolo/istituto) vote --
+
+/// Whether [text] carries a "subject" (role/degree) or "org"
+/// (company/institution) signal, per the vocab regexes — or neither.
+enum _Signal { subject, org, none }
+
+/// Tries every explicit (non-vote) pattern against a single [line]:
+/// connector, then vocab-guided split, then a marker embedded mid-line.
+/// Shared between the own-head claim (block's own first content line) and
+/// the preceding-lines scan, so both layouts recognize the same patterns.
+({String subject, String org})? _tryExplicitSubjectOrg(
+  String line, {
+  RegExp? connectorRe,
+  RegExp? splitRe,
+  RegExp? markerRe,
+  required RegExp subjectVocabRe,
+  required RegExp orgVocabRe,
+}) {
+  if (connectorRe != null) {
+    final m = connectorRe.firstMatch(line);
+    if (m != null) {
+      return (subject: m.group(1)!.trim(), org: m.group(2)!.trim());
+    }
+  }
+
+  if (splitRe != null) {
+    final m = splitRe.firstMatch(line);
+    if (m != null) {
+      final left = m.group(1)!.trim();
+      final right = m.group(2)!.trim();
+      if (left.isNotEmpty && right.isNotEmpty) {
+        final leftSignal = _classify(
+          left,
+          subjectRe: subjectVocabRe,
+          orgRe: orgVocabRe,
+        );
+        final rightSignal = _classify(
+          right,
+          subjectRe: subjectVocabRe,
+          orgRe: orgVocabRe,
+        );
+        if (leftSignal == _Signal.subject || rightSignal == _Signal.org) {
+          return (subject: left, org: right);
+        }
+        if (leftSignal == _Signal.org || rightSignal == _Signal.subject) {
+          return (subject: right, org: left);
+        }
+      }
+    }
+  }
+
+  if (markerRe != null) {
+    final matches = markerRe.allMatches(line).toList();
+    if (matches.isNotEmpty) {
+      final split = matches.last.start;
+      final left = line
+          .substring(0, split)
+          .trim()
+          .replaceAll(RegExp(r'[,\s]+$'), '');
+      final right = line.substring(split).trim();
+      if (left.isNotEmpty && right.isNotEmpty) {
+        return (subject: left, org: right);
+      }
+    }
+  }
+
+  return null;
+}
+
+_Signal _classify(
+  String text, {
+  required RegExp subjectRe,
+  required RegExp orgRe,
+}) {
+  final hasSubject = subjectRe.hasMatch(text);
+  final hasOrg = orgRe.hasMatch(text);
+  if (hasSubject && !hasOrg) return _Signal.subject;
+  if (hasOrg && !hasSubject) return _Signal.org;
+  return _Signal.none;
+}
+
+/// Tallies, across a document's blocks, whether the line/part *nearer* to
+/// the date anchor tends to be the org (company/institution) or the subject
+/// (role/degree) — ticket 53's "voto per-documento sull'ordine". `null`
+/// means no clear majority: caller falls back to leaving both fields blank.
+class _OrderVote {
+  int _nearIsOrg = 0;
+  int _farIsOrg = 0;
+  void record({required bool nearIsOrg}) {
+    if (nearIsOrg) {
+      _nearIsOrg++;
+    } else {
+      _farIsOrg++;
+    }
+  }
+
+  bool? get nearIsOrgMajority {
+    if (_nearIsOrg == 0 && _farIsOrg == 0) return null;
+    if (_nearIsOrg == _farIsOrg) return null;
+    return _nearIsOrg > _farIsOrg;
+  }
+}
+
+/// One resolved (or attempted) subject/org pair for a block, pending a
+/// possible per-document vote to fill in `null` fields.
+class _PendingPair {
+  final _ItemBlock block;
+  final int index;
+  final String far;
+  final String near;
+  _PendingPair({
+    required this.block,
+    required this.index,
+    required this.far,
+    required this.near,
+  });
+}
+
+/// Resolves subject (ruolo/titolo) + org (azienda/istituto) for every block
+/// of a section, applying explicit per-block signals first and a
+/// per-document majority vote for whatever's left ambiguous.
+///
+/// [connectorRe] is an optional explicit "{subject} keyword {org}" pattern
+/// (Esperienze's `presso`/`at`) whose keyword alone disambiguates order —
+/// always certain, never needs the vote. [splitRe] is a single-line
+/// separator pattern (Esperienze's `|`, Formazione's `,`) whose *sides*'
+/// order needs vocab or the vote to resolve.
+/// [consumedPrecedingCount] is how many of the block's `precedingLines` were
+/// actually used to resolve `org`/`subject` — 0 unless something matched.
+/// Callers use it to trim exactly that many trailing lines off the
+/// *previous* block's `descriptionLines` (see `_applyConsumedPreceding`):
+/// `precedingLines` is only ever a peek until a match confirms those lines
+/// weren't ordinary prose.
+typedef _SubjectOrgResult = ({
+  String subject,
+  String org,
+  bool subjectCertain,
+  bool orgCertain,
+  List<String> sourceLines,
+  int consumedPrecedingCount,
+});
+
+List<_SubjectOrgResult> _resolveSubjectOrgPairs(
+  List<_ItemBlock> blocks, {
+  RegExp? connectorRe,
+  RegExp? splitRe,
+  required RegExp subjectVocabRe,
+  required RegExp orgVocabRe,
+  RegExp? orgMarkerLineRe,
+}) {
+  final results = List<_SubjectOrgResult>.filled(blocks.length, (
+    subject: '',
+    org: '',
+    subjectCertain: false,
+    orgCertain: false,
+    sourceLines: <String>[],
+    consumedPrecedingCount: 0,
+  ), growable: false);
+
+  final vote = _OrderVote();
+  final pending = <_PendingPair>[];
+
+  for (var i = 0; i < blocks.length; i++) {
+    final block = blocks[i];
+    String? subject = block.embeddedTitle ?? block.ownHeadSubject;
+    String? org = block.ownHeadOrg;
+    var subjectCertain = subject != null;
+    var orgCertain = org != null;
+    var consumedPreceding = 0;
+    final sourceLines = <String>[
+      if (block.ownHeadSourceLine != null) block.ownHeadSourceLine!,
+      ...block.precedingLines,
+    ];
+
+    final candidateLines = block.precedingLines;
+
+    // 1–3. Explicit connector / vocab-guided split / embedded marker,
+    // tried against every candidate line still available.
+    if (org == null) {
+      for (final line in candidateLines) {
+        final resolved = _tryExplicitSubjectOrg(
+          line,
+          connectorRe: connectorRe,
+          splitRe: splitRe,
+          markerRe: orgMarkerLineRe,
+          subjectVocabRe: subjectVocabRe,
+          orgVocabRe: orgVocabRe,
+        );
+        if (resolved != null) {
+          subject ??= resolved.subject;
+          org = resolved.org;
+          subjectCertain = true;
+          orgCertain = true;
+          consumedPreceding = candidateLines.length;
+          break;
+        }
+      }
+    }
+
+    // 4. Two bare candidate lines, no explicit separator matched: classify
+    //    each independently; direct signal wins, otherwise queue for the
+    //    per-document vote.
+    if (org == null && candidateLines.length == 2) {
+      final far = candidateLines[0];
+      final near = candidateLines[1];
+      final farSignal = _classify(
+        far,
+        subjectRe: subjectVocabRe,
+        orgRe: orgVocabRe,
+      );
+      final nearSignal = _classify(
+        near,
+        subjectRe: subjectVocabRe,
+        orgRe: orgVocabRe,
+      );
+      if (farSignal == _Signal.org && nearSignal != _Signal.org) {
+        org = far;
+        subject ??= near;
+        subjectCertain = true;
+        orgCertain = true;
+        consumedPreceding = 2;
+        vote.record(nearIsOrg: false);
+      } else if (nearSignal == _Signal.org && farSignal != _Signal.org) {
+        org = near;
+        subject ??= far;
+        subjectCertain = true;
+        orgCertain = true;
+        consumedPreceding = 2;
+        vote.record(nearIsOrg: true);
+      } else if (farSignal == _Signal.subject &&
+          nearSignal != _Signal.subject) {
+        subject ??= far;
+        org = near;
+        subjectCertain = true;
+        orgCertain = true;
+        consumedPreceding = 2;
+        vote.record(nearIsOrg: true);
+      } else if (nearSignal == _Signal.subject &&
+          farSignal != _Signal.subject) {
+        subject ??= near;
+        org = far;
+        subjectCertain = true;
+        orgCertain = true;
+        consumedPreceding = 2;
+        vote.record(nearIsOrg: false);
+      } else {
+        pending.add(_PendingPair(block: block, index: i, far: far, near: near));
+      }
+    }
+
+    results[i] = (
+      subject: subject ?? '',
+      org: org ?? '',
+      subjectCertain: subjectCertain,
+      orgCertain: orgCertain,
+      sourceLines: sourceLines,
+      consumedPrecedingCount: consumedPreceding,
+    );
+  }
+
+  final majority = vote.nearIsOrgMajority;
+  if (majority != null) {
+    for (final p in pending) {
+      final org = majority ? p.near : p.far;
+      final subject = majority ? p.far : p.near;
+      final prior = results[p.index];
+      results[p.index] = (
+        subject: prior.subject.isEmpty ? subject : prior.subject,
+        org: org,
+        subjectCertain: prior.subject.isEmpty ? false : prior.subjectCertain,
+        orgCertain: false,
+        sourceLines: prior.sourceLines,
+        consumedPrecedingCount: 2,
+      );
+    }
+  }
+
+  return results;
+}
+
+/// Trims off each block's `precedingLines` from the tail of the *previous*
+/// block's `descriptionLines`, but only for blocks whose
+/// [_SubjectOrgResult.consumedPrecedingCount] confirms something actually
+/// used them — see [_resolveSubjectOrgPairs] doc.
+void _applyConsumedPreceding(
+  List<_ItemBlock> blocks,
+  List<_SubjectOrgResult> pairs,
+) {
+  for (var k = 1; k < blocks.length; k++) {
+    final count = pairs[k].consumedPrecedingCount;
+    if (count == 0) continue;
+    final prevDesc = blocks[k - 1].descriptionLines;
+    final keep = prevDesc.length - count;
+    blocks[k - 1].descriptionLines = keep <= 0
+        ? const []
+        : prevDesc.sublist(0, keep);
+  }
 }
 
 // -------------------- Public entry point --------------------
@@ -561,26 +1224,52 @@ List<List<String>> _groupIntoBlocks(List<String> lines) {
     );
   }
 
-  final headings = _detectSectionHeadings(flat);
+  // Anti-disastro fallback stays keyed on *recognized* headings only — an
+  // unrecognized-but-title-shaped heading (item 5 below) is a bonus, not
+  // something that should lower the safety bar that disables section-first
+  // splitting entirely.
+  final recognizedHeadings = _detectSectionHeadings(flat);
 
   final reviewBuffer = StringBuffer();
 
-  if (headings.length < 2) {
+  if (recognizedHeadings.length < 2) {
     // Fallback anti-disastro: section-first disabled entirely.
     for (final l in flat) {
       reviewBuffer.writeln(l.text);
     }
   } else {
+    final boundaries = _detectAllHeadingBoundaries(flat);
+
+    final name = _tryExtractName(flat, boundaries);
+    if (name != null) {
+      report.add(
+        'anagrafica.nome',
+        certain: name.certain,
+        sourceLines: [name.sourceLine],
+      );
+      report.add(
+        'anagrafica.cognome',
+        certain: name.certain,
+        sourceLines: [name.sourceLine],
+      );
+      sections.add(
+        AnagraficaSection(
+          displayTitle: 'Anagrafica',
+          data: AnagraficaData(nome: name.nome, cognome: name.cognome),
+        ),
+      );
+    }
+
     // Everything before the first heading also goes to "Da rivedere".
-    for (var i = 0; i < headings.first.startLine; i++) {
+    for (var i = 0; i < boundaries.first.startLine; i++) {
       reviewBuffer.writeln(flat[i].text);
     }
 
-    for (var h = 0; h < headings.length; h++) {
-      final section = headings[h];
+    for (var h = 0; h < boundaries.length; h++) {
+      final section = boundaries[h];
       final bodyStart = section.startLine + 1;
-      final bodyEnd = h + 1 < headings.length
-          ? headings[h + 1].startLine
+      final bodyEnd = h + 1 < boundaries.length
+          ? boundaries[h + 1].startLine
           : flat.length;
       final bodyLines = [
         for (var i = bodyStart; i < bodyEnd; i++) flat[i].text,
@@ -594,15 +1283,31 @@ List<List<String>> _groupIntoBlocks(List<String> lines) {
         case SectionKind.certificazioni:
           sections.add(_buildCertificazioni(bodyLines, report));
         case SectionKind.lingue:
-        case SectionKind.sommario:
+          final lingue = _buildLingue(
+            section.originalText,
+            bodyLines,
+            report,
+            0,
+          );
+          if (lingue != null) sections.add(lingue);
         case SectionKind.skill:
-          // Recognized as a heading but not confidently structurable into
-          // typed fields (Lingue needs a CEFR level, Sommario/Skill are
-          // free text) — ticket 13/51: becomes its own custom section
-          // under the heading's original text, not an anonymous dump into
-          // "Da rivedere".
+          final skill = _buildSkill(section.originalText, bodyLines, report);
+          if (skill != null) sections.add(skill);
+        case SectionKind.sommario:
+          // Free text — ticket 13/51: becomes its own custom section under
+          // the heading's original text, not an anonymous dump into "Da
+          // rivedere".
           final unstructured = _buildUnstructuredCustomSection(
-            flat[section.startLine].text,
+            section.originalText,
+            bodyLines,
+          );
+          if (unstructured != null) sections.add(unstructured);
+        case null:
+          // Unrecognized but title-shaped heading (ticket 53, item 5): its
+          // own custom section under the original title, not merged into
+          // whatever section precedes it.
+          final unstructured = _buildUnstructuredCustomSection(
+            section.originalText,
             bodyLines,
           );
           if (unstructured != null) sections.add(unstructured);
@@ -642,46 +1347,67 @@ EsperienzeSection _buildEsperienze(
   StringBuffer reviewBuffer,
   ImportProposalReportBuilder report,
 ) {
-  final blocks = _groupIntoBlocks(bodyLines);
+  final grouped = _groupIntoItemBlocks(
+    bodyLines,
+    connectorRe: _connectorLineRe,
+  );
+  for (final l in grouped.unclaimedLeading) {
+    reviewBuffer.writeln(l);
+  }
+
+  final pairs = _resolveSubjectOrgPairs(
+    grouped.blocks,
+    connectorRe: _connectorLineRe,
+    splitRe: _pipeSplitLineRe,
+    subjectVocabRe: _roleVocabRe,
+    orgVocabRe: _companyMarkerRe,
+  );
+  _applyConsumedPreceding(grouped.blocks, pairs);
+
   final items = <EsperienzaItem>[];
-  for (final block in blocks) {
-    final dateLineIdx = block.indexWhere(looksLikeDateRangeLine);
-    if (dateLineIdx == -1) {
-      reviewBuffer.writeln('--- Esperienza non riconosciuta ---');
-      for (final l in block) {
-        reviewBuffer.writeln(l);
-      }
-      continue;
-    }
-    final range = tryParseDateRangeLine(block[dateLineIdx])!;
-    final descriptionLines = [
-      for (var i = 0; i < block.length; i++)
-        if (i != dateLineIdx) block[i],
-    ];
+  for (var i = 0; i < grouped.blocks.length; i++) {
+    final block = grouped.blocks[i];
+    final pair = pairs[i];
     final index = items.length;
+
     report.add(
       'esperienze[$index].dateRange',
       certain: true,
-      sourceLines: [block[dateLineIdx]],
+      sourceLines: [block.dateSourceLine],
     );
-    if (descriptionLines.isNotEmpty) {
+    if (block.descriptionLines.isNotEmpty) {
       report.add(
         'esperienze[$index].descrizione',
         certain: true,
-        sourceLines: descriptionLines,
+        sourceLines: block.descriptionLines,
       );
     }
+    if (pair.subject.isNotEmpty) {
+      report.add(
+        'esperienze[$index].ruolo',
+        certain: pair.subjectCertain,
+        sourceLines: pair.sourceLines,
+      );
+    }
+    if (pair.org.isNotEmpty) {
+      report.add(
+        'esperienze[$index].azienda',
+        certain: pair.orgCertain,
+        sourceLines: pair.sourceLines,
+      );
+    }
+
     items.add(
       EsperienzaItem(
         id: _uuid.v4(),
-        ruolo: '',
-        azienda: '',
-        startDate: range.start,
-        endDate: range.end,
-        current: range.current,
-        descrizione: descriptionLines.isEmpty
+        ruolo: pair.subject,
+        azienda: pair.org,
+        startDate: block.range.start,
+        endDate: block.range.end,
+        current: block.range.current,
+        descrizione: block.descriptionLines.isEmpty
             ? null
-            : descriptionLines.join('\n'),
+            : block.descriptionLines.join('\n'),
       ),
     );
   }
@@ -693,45 +1419,70 @@ FormazioneSection _buildFormazione(
   StringBuffer reviewBuffer,
   ImportProposalReportBuilder report,
 ) {
-  final blocks = _groupIntoBlocks(bodyLines);
+  final grouped = _groupIntoItemBlocks(
+    bodyLines,
+    splitRe: _commaSplitLineRe,
+    markerRe: _institutionVocabRe,
+    subjectVocabRe: _degreeVocabRe,
+    orgVocabRe: _institutionVocabRe,
+  );
+  for (final l in grouped.unclaimedLeading) {
+    reviewBuffer.writeln(l);
+  }
+
+  final pairs = _resolveSubjectOrgPairs(
+    grouped.blocks,
+    splitRe: _commaSplitLineRe,
+    subjectVocabRe: _degreeVocabRe,
+    orgVocabRe: _institutionVocabRe,
+    orgMarkerLineRe: _institutionVocabRe,
+  );
+  _applyConsumedPreceding(grouped.blocks, pairs);
+
   final items = <FormazioneItem>[];
-  for (final block in blocks) {
-    final dateLineIdx = block.indexWhere(looksLikeDateRangeLine);
-    if (dateLineIdx == -1) {
-      reviewBuffer.writeln('--- Formazione non riconosciuta ---');
-      for (final l in block) {
-        reviewBuffer.writeln(l);
-      }
-      continue;
-    }
-    final range = tryParseDateRangeLine(block[dateLineIdx])!;
-    final descriptionLines = [
-      for (var i = 0; i < block.length; i++)
-        if (i != dateLineIdx) block[i],
-    ];
+  for (var i = 0; i < grouped.blocks.length; i++) {
+    final block = grouped.blocks[i];
+    final pair = pairs[i];
     final index = items.length;
+
     report.add(
       'formazione[$index].dateRange',
       certain: true,
-      sourceLines: [block[dateLineIdx]],
+      sourceLines: [block.dateSourceLine],
     );
-    if (descriptionLines.isNotEmpty) {
+    if (block.descriptionLines.isNotEmpty) {
       report.add(
         'formazione[$index].descrizione',
         certain: true,
-        sourceLines: descriptionLines,
+        sourceLines: block.descriptionLines,
       );
     }
+    if (pair.subject.isNotEmpty) {
+      report.add(
+        'formazione[$index].titolo',
+        certain: pair.subjectCertain,
+        sourceLines: pair.sourceLines,
+      );
+    }
+    if (pair.org.isNotEmpty) {
+      report.add(
+        'formazione[$index].istituto',
+        certain: pair.orgCertain,
+        sourceLines: pair.sourceLines,
+      );
+    }
+
     items.add(
       FormazioneItem(
         id: _uuid.v4(),
-        titolo: '',
-        startDate: range.start,
-        endDate: range.end,
-        current: range.current,
-        descrizione: descriptionLines.isEmpty
+        titolo: pair.subject,
+        istituto: pair.org.isEmpty ? null : pair.org,
+        startDate: block.range.start,
+        endDate: block.range.end,
+        current: block.range.current,
+        descrizione: block.descriptionLines.isEmpty
             ? null
-            : descriptionLines.join('\n'),
+            : block.descriptionLines.join('\n'),
       ),
     );
   }
@@ -752,6 +1503,117 @@ CustomSection? _buildUnstructuredCustomSection(
     id: _uuid.v4(),
     displayTitle: originalHeadingText,
     markdown: markdown,
+  );
+}
+
+/// Builds the Lingue section (ticket 53, item 3): recognizes CEFR levels
+/// (`A1`..`C2`) and "madrelingua"/"mother tongue" per line. A line with
+/// exactly one recognized level is a certain proposal. When a language name
+/// recurs with several different levels on the same line (Europass-style
+/// per-skill breakdown: "Listening C2 Reading C2 Writing C1"), the most
+/// frequent level is proposed and marked uncertain — it's a statistical
+/// pick, not a direct read.
+LingueSection? _buildLingue(
+  String originalHeadingText,
+  List<String> bodyLines,
+  ImportProposalReportBuilder report,
+  int startIndex,
+) {
+  final items = <LinguaItem>[];
+  var index = startIndex;
+  for (final rawLine in bodyLines) {
+    final line = rawLine.trim();
+    if (line.isEmpty) continue;
+    final levelMatches = _cefrLevelRe.allMatches(line).toList();
+    if (levelMatches.isEmpty) {
+      // No CEFR level on this line (e.g. a "MOTHER TONGUE(S):" sub-label in
+      // a Europass-style block) — not structurable, but still evidence the
+      // heuristics looked at, so it doesn't show up as a lost line.
+      report.add('lingue.unclaimed', certain: false, sourceLines: [line]);
+      continue;
+    }
+
+    final levels = <LivelloCefr>[];
+    for (final m in levelMatches) {
+      final token = (m.group(1) ?? m.group(2))!.toLowerCase();
+      if (token == 'madrelingua' || token == 'mother tongue') {
+        levels.add(LivelloCefr.madrelingua);
+      } else {
+        levels.add(_cefrWireToLevel[token]!);
+      }
+    }
+
+    // Language name: whatever precedes the first level/separator token.
+    final splitIdx = levelMatches.first.start;
+    var lingua = line
+        .substring(0, splitIdx)
+        .trim()
+        .replaceAll(RegExp(r'[\-:,]+$'), '')
+        .trim();
+    if (lingua.isEmpty) lingua = line;
+
+    LivelloCefr livello;
+    bool certain;
+    if (levels.length == 1) {
+      livello = levels.first;
+      certain = true;
+    } else {
+      final counts = <LivelloCefr, int>{};
+      for (final l in levels) {
+        counts[l] = (counts[l] ?? 0) + 1;
+      }
+      final maxCount = counts.values.reduce((a, b) => a > b ? a : b);
+      livello = counts.entries.firstWhere((e) => e.value == maxCount).key;
+      certain = false;
+    }
+
+    report.add('lingue[$index].livello', certain: certain, sourceLines: [line]);
+    items.add(LinguaItem(id: _uuid.v4(), lingua: lingua, livello: livello));
+    index++;
+  }
+  if (items.isEmpty) return null;
+  return LingueSection(displayTitle: originalHeadingText, items: items);
+}
+
+/// Builds the Skill section (ticket 53, item 4): a line with 2+ occurrences
+/// of the same repeated separator (`|`, `•`, `,`) becomes the `tags` list;
+/// the rest of the block becomes free-text `markdown`.
+SkillSection? _buildSkill(
+  String originalHeadingText,
+  List<String> bodyLines,
+  ImportProposalReportBuilder report,
+) {
+  String? tagLine;
+  final markdownLines = <String>[];
+  for (final line in bodyLines) {
+    if (tagLine == null &&
+        (_repeatedPipeRe.hasMatch(line) ||
+            _repeatedBulletRe.hasMatch(line) ||
+            _repeatedCommaRe.hasMatch(line))) {
+      tagLine = line;
+      continue;
+    }
+    markdownLines.add(line);
+  }
+
+  List<String> tags = const [];
+  if (tagLine != null) {
+    final sep = tagLine.contains('|')
+        ? '|'
+        : (tagLine.contains('•') ? '•' : ',');
+    tags = tagLine
+        .split(sep)
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
+    report.add('skill.tags', certain: true, sourceLines: [tagLine]);
+  }
+
+  final markdown = markdownLines.join('\n').trim();
+  if (tags.isEmpty && markdown.isEmpty) return null;
+  return SkillSection(
+    displayTitle: originalHeadingText,
+    data: SkillData(markdown: markdown.isEmpty ? null : markdown, tags: tags),
   );
 }
 
