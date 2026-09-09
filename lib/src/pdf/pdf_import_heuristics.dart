@@ -59,6 +59,15 @@ class PdfPageText {
 /// asset YAML (per ticket 28 implementation notes): the list is small,
 /// static, and this keeps the module dependency-free and trivially testable.
 const Map<SectionKind, List<String>> _sectionTitleSynonyms = {
+  SectionKind.sommario: [
+    'sommario',
+    'profilo',
+    'profile',
+    'about me',
+    'about myself',
+    'summary',
+    'chi sono',
+  ],
   SectionKind.esperienze: [
     'esperienza',
     'esperienze',
@@ -79,6 +88,14 @@ const Map<SectionKind, List<String>> _sectionTitleSynonyms = {
     'education and training',
     'academic background',
   ],
+  SectionKind.skill: [
+    'skill',
+    'skills',
+    'competenze',
+    'competenze tecniche',
+    'technical skills',
+    'hard skills',
+  ],
   SectionKind.lingue: [
     'lingue',
     'lingue straniere',
@@ -91,9 +108,19 @@ const Map<SectionKind, List<String>> _sectionTitleSynonyms = {
     'certificati',
     'certifications',
     'certificates',
-    'licenses & certifications',
+    'licenses and certifications',
   ],
 };
+
+/// Normalizes a heading candidate for dictionary lookup: trims, lowercases,
+/// and folds `&` into `and` (`EDUCATION & TRAINING` -> `education and
+/// training`) so the dictionary only needs one spelling per synonym.
+String _normalizeHeadingText(String text) => text
+    .trim()
+    .toLowerCase()
+    .replaceAll('&', ' and ')
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .trim();
 
 // -------------------- Contact regexes (signal-first) --------------------
 
@@ -111,8 +138,18 @@ final RegExp _githubRe = RegExp(
   r'(?:https?://)?(?:www\.)?github\.com/[A-Za-z0-9_-]+/?',
   caseSensitive: false,
 );
+
+/// Generic URLs: an explicit `http(s)://` scheme always counts (any TLD),
+/// otherwise the last label must be in a TLD allowlist. A blocklist of
+/// non-TLD extensions (`.js`, `.ts`, ...) would only ever cover today's
+/// false positives — the allowlist fails predictably instead: at worst it
+/// misses an exotic TLD, it never invents a link from a library name like
+/// `React.js` or an abbreviated name like `A.B.` (ticket 51).
 final RegExp _urlRe = RegExp(
-  r'(?:https?://)?(?:www\.)?[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+(?:/[^\s]*)?',
+  r'(?:https?://[^\s]+)'
+  r'|(?:(?:www\.)?[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*'
+  r'\.(?:com|org|net|io|dev|it|eu|co|me|ai|app|xyz|info|biz|edu|gov|tv|cc'
+  r'|us|uk|de|fr|es|nl)(?:/[^\s]*)?)',
   caseSensitive: false,
 );
 
@@ -186,6 +223,21 @@ YearMonth? tryParseFreeTextYearMonth(String input) {
   final text = input.trim();
   if (text.isEmpty) return null;
 
+  // Numeric day/month/year (`01/06/2024`, Europass-style). Checked before
+  // the month/year form below: distinct group count, anchored, so the two
+  // never collide.
+  final numericDmy = RegExp(r'^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$')
+      .firstMatch(text);
+  if (numericDmy != null) {
+    final day = int.parse(numericDmy.group(1)!);
+    final month = int.parse(numericDmy.group(2)!);
+    final year = int.parse(numericDmy.group(3)!);
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+      return YearMonth(year, month);
+    }
+    return null;
+  }
+
   final numeric = RegExp(r'^(\d{1,2})[/\-.](\d{4})$').firstMatch(text);
   if (numeric != null) {
     final month = int.parse(numeric.group(1)!);
@@ -206,6 +258,25 @@ YearMonth? tryParseFreeTextYearMonth(String input) {
     if (month != null) {
       return YearMonth(int.parse(yearOnlyMonthName.group(2)!), month);
     }
+    return null;
+  }
+
+  // Day + month-name + year (`1 Jun 2024`, `30 SEP 2007`, Europass-style).
+  // The day is parsed only to validate the token and then discarded — the
+  // schema (ticket 01) is month+year.
+  final dayMonthNameYear = RegExp(
+    r'^(\d{1,2})[.\s]+([A-Za-zàèéìòù]+)\.?[.\s]+(\d{4})$',
+    caseSensitive: false,
+  ).firstMatch(text);
+  if (dayMonthNameYear != null) {
+    final day = int.parse(dayMonthNameYear.group(1)!);
+    final monthWord = dayMonthNameYear.group(2)!.toLowerCase();
+    final year = int.parse(dayMonthNameYear.group(3)!);
+    final month = _monthNames[monthWord];
+    if (day >= 1 && day <= 31 && month != null) {
+      return YearMonth(year, month);
+    }
+    return null;
   }
 
   return null;
@@ -263,7 +334,7 @@ bool looksLikeDateRangeLine(String line) => tryParseDateRangeLine(line) != null;
 /// consumed by [buildFromPages], never "lost" — apart from a line that
 /// truly went unaccounted for.
 bool isRecognizedSectionHeading(String text) {
-  final normalized = text.trim().toLowerCase();
+  final normalized = _normalizeHeadingText(text);
   return _sectionTitleSynonyms.values.any((s) => s.contains(normalized));
 }
 
@@ -335,15 +406,58 @@ class _FlatLine {
   const _FlatLine(this.text, this.isHeadingSized);
 }
 
+/// Matches standalone pagination markers: `Page 1/2`, `Pagina 1 di 2`,
+/// `Page 1 of 2`, `Page 1-2`, or a bare `1/2`. Only the slash form is
+/// recognized without a `page`/`pagina` prefix — an unprefixed `N-M` or
+/// `N of M` is plausible CV content (a year range, a count) and must not
+/// be eaten (ticket 51).
+final RegExp _paginationLineRe = RegExp(
+  r'^(?:(?:page|pagina)\s*\d{1,4}\s*(?:/|-|di|of)\s*\d{1,4}'
+  r'|\d{1,4}\s*/\s*\d{1,4})$',
+  caseSensitive: false,
+);
+
+String _normalizeForRecurrence(String text) => text.trim().toLowerCase();
+
 List<_FlatLine> _flatten(List<PdfPageText> pages) {
+  final nonEmptyPages = [
+    for (final page in pages)
+      if (page.chars.isNotEmpty) page,
+  ];
+
+  // Header/footer detection by positional recurrence: a line that appears
+  // verbatim as the first (or last) non-empty line on 2+ pages is treated
+  // as running header/footer chrome, not content (ticket 51).
+  final firstLineTexts = <String>[];
+  final lastLineTexts = <String>[];
+  for (final page in nonEmptyPages) {
+    final nonEmptyChars = page.chars.where((c) => c.text.trim().isNotEmpty);
+    if (nonEmptyChars.isEmpty) continue;
+    firstLineTexts.add(_normalizeForRecurrence(nonEmptyChars.first.text));
+    lastLineTexts.add(_normalizeForRecurrence(nonEmptyChars.last.text));
+  }
+  bool recurs(String normalized, List<String> positionTexts) =>
+      positionTexts.where((t) => t == normalized).length >= 2;
+
   final lines = <_FlatLine>[];
-  for (final page in pages) {
-    if (page.chars.isEmpty) continue;
+  for (final page in nonEmptyPages) {
     final heights = page.chars.map((c) => c.height).toList()..sort();
     final pageMedian = heights[heights.length ~/ 2];
-    for (final c in page.chars) {
+    final nonEmptyChars = page.chars
+        .where((c) => c.text.trim().isNotEmpty)
+        .toList();
+    for (var i = 0; i < page.chars.length; i++) {
+      final c = page.chars[i];
       final text = c.text.trim();
       if (text.isEmpty) continue;
+      if (_paginationLineRe.hasMatch(text)) continue;
+
+      final normalized = _normalizeForRecurrence(text);
+      final isFirstOnPage = identical(c, nonEmptyChars.first);
+      final isLastOnPage = identical(c, nonEmptyChars.last);
+      if (isFirstOnPage && recurs(normalized, firstLineTexts)) continue;
+      if (isLastOnPage && recurs(normalized, lastLineTexts)) continue;
+
       lines.add(_FlatLine(text, c.height >= pageMedian));
     }
   }
@@ -355,7 +469,7 @@ List<_DetectedSection> _detectSectionHeadings(List<_FlatLine> lines) {
   for (var i = 0; i < lines.length; i++) {
     final line = lines[i];
     if (!line.isHeadingSized) continue;
-    final normalized = line.text.trim().toLowerCase();
+    final normalized = _normalizeHeadingText(line.text);
     for (final entry in _sectionTitleSynonyms.entries) {
       if (entry.value.contains(normalized)) {
         found.add(_DetectedSection(entry.key, i));
@@ -461,16 +575,21 @@ CvDocument buildFromPages(List<PdfPageText> pages) {
           sections.add(_buildEsperienze(bodyLines, reviewBuffer));
         case SectionKind.formazione:
           sections.add(_buildFormazione(bodyLines, reviewBuffer));
-        case SectionKind.lingue:
-          // Lingue items need a CEFR level we can't confidently infer from
-          // free text alone; keep the raw block in "Da rivedere" instead
-          // of guessing `livello`.
-          reviewBuffer.writeln('--- Lingue ---');
-          for (final l in bodyLines) {
-            reviewBuffer.writeln(l);
-          }
         case SectionKind.certificazioni:
           sections.add(_buildCertificazioni(bodyLines));
+        case SectionKind.lingue:
+        case SectionKind.sommario:
+        case SectionKind.skill:
+          // Recognized as a heading but not confidently structurable into
+          // typed fields (Lingue needs a CEFR level, Sommario/Skill are
+          // free text) — ticket 13/51: becomes its own custom section
+          // under the heading's original text, not an anonymous dump into
+          // "Da rivedere".
+          final unstructured = _buildUnstructuredCustomSection(
+            flat[section.startLine].text,
+            bodyLines,
+          );
+          if (unstructured != null) sections.add(unstructured);
         default:
           for (final l in bodyLines) {
             reviewBuffer.writeln(l);
@@ -570,6 +689,23 @@ FormazioneSection _buildFormazione(
     );
   }
   return FormazioneSection(displayTitle: 'Formazione', items: items);
+}
+
+/// Builds a custom section titled with [originalHeadingText] (the heading
+/// exactly as it appeared in the source, not the dictionary synonym) from
+/// [bodyLines]. Returns `null` if the body is empty — a bare heading with
+/// no content has nothing to show.
+CustomSection? _buildUnstructuredCustomSection(
+  String originalHeadingText,
+  List<String> bodyLines,
+) {
+  final markdown = bodyLines.join('\n').trim();
+  if (markdown.isEmpty) return null;
+  return CustomSection(
+    id: _uuid.v4(),
+    displayTitle: originalHeadingText,
+    markdown: markdown,
+  );
 }
 
 CertificazioniSection _buildCertificazioni(List<String> bodyLines) {
