@@ -379,6 +379,28 @@ void main() {
       expect(esperienze.single.descrizione, isNot(contains('Page')));
     });
 
+    test('un intervallo di anni "2019-2022" bare non viene scambiato per '
+        'paginazione', () {
+      final doc = buildFromPages([
+        page(
+          [
+            'Esperienze',
+            'Gennaio 2020 - Marzo 2021',
+            '2019-2022',
+            'Formazione',
+            'Gennaio 2015 - Luglio 2018',
+          ],
+          headingLines: {0, 3},
+        ),
+      ]);
+
+      final esperienze = doc.sections
+          .whereType<EsperienzeSection>()
+          .single
+          .items;
+      expect(esperienze.single.descrizione, contains('2019-2022'));
+    });
+
     test('un footer ricorrente identico su più pagine viene scartato', () {
       final doc = buildFromPages([
         page(

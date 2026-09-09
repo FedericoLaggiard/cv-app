@@ -407,9 +407,13 @@ class _FlatLine {
 }
 
 /// Matches standalone pagination markers: `Page 1/2`, `Pagina 1 di 2`,
-/// `1 of 2`, or a bare `1/2`.
+/// `Page 1 of 2`, `Page 1-2`, or a bare `1/2`. Only the slash form is
+/// recognized without a `page`/`pagina` prefix — an unprefixed `N-M` or
+/// `N of M` is plausible CV content (a year range, a count) and must not
+/// be eaten (ticket 51).
 final RegExp _paginationLineRe = RegExp(
-  r'^(?:(?:page|pagina)\s*)?\d{1,4}\s*(?:/|-|di|of)\s*\d{1,4}$',
+  r'^(?:(?:page|pagina)\s*\d{1,4}\s*(?:/|-|di|of)\s*\d{1,4}'
+  r'|\d{1,4}\s*/\s*\d{1,4})$',
   caseSensitive: false,
 );
 
