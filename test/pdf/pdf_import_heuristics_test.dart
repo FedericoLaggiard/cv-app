@@ -61,6 +61,75 @@ void main() {
     }
   });
 
+  // Il dizionario dei mesi e' una tabella compilata a mano che cresce a ogni
+  // lingua o abbreviazione aggiunta, e una voce sbagliata non fa crashare
+  // nulla: produce una data plausibile ma sbagliata, per giunta marcata
+  // `certain: true` nel report, quindi il passo di revisione non la
+  // evidenzierebbe. Il baseline di mutation testing (ticket 22/53) ha trovato
+  // 27 voci su 44 che nessun test toccava: le attese qui sotto sono scritte a
+  // mano di proposito, per non ridursi a rileggere la stessa tabella.
+  group('tryParseFreeTextYearMonth — ogni voce del dizionario dei mesi', () {
+    const monthWords = <String, int>{
+      'gennaio': 1,
+      'gen': 1,
+      'january': 1,
+      'jan': 1,
+      'febbraio': 2,
+      'feb': 2,
+      'february': 2,
+      'marzo': 3,
+      'mar': 3,
+      'march': 3,
+      'aprile': 4,
+      'apr': 4,
+      'april': 4,
+      'maggio': 5,
+      'mag': 5,
+      'may': 5,
+      'giugno': 6,
+      'giu': 6,
+      'june': 6,
+      'jun': 6,
+      'luglio': 7,
+      'lug': 7,
+      'july': 7,
+      'jul': 7,
+      'agosto': 8,
+      'ago': 8,
+      'august': 8,
+      'aug': 8,
+      'settembre': 9,
+      'set': 9,
+      'sep': 9,
+      'september': 9,
+      'sept': 9,
+      'ottobre': 10,
+      'ott': 10,
+      'october': 10,
+      'oct': 10,
+      'novembre': 11,
+      'nov': 11,
+      'november': 11,
+      'dicembre': 12,
+      'dic': 12,
+      'december': 12,
+      'dec': 12,
+    };
+
+    test('il dizionario copre 44 voci: se ne aggiungi una, aggiungila qui', () {
+      expect(monthWords, hasLength(44));
+    });
+
+    for (final entry in monthWords.entries) {
+      test('"${entry.key} 2020" -> mese ${entry.value}', () {
+        expect(
+          tryParseFreeTextYearMonth('${entry.key} 2020'),
+          YearMonth(2020, entry.value),
+        );
+      });
+    }
+  });
+
   group('tryParseDateRangeLine', () {
     test('trattino semplice', () {
       final r = tryParseDateRangeLine('Gennaio 2020 - Marzo 2022');
