@@ -653,12 +653,16 @@ List<_HeadingBoundary> _detectAllHeadingBoundaries(List<_FlatLine> lines) {
 /// than 2 tokens — compound names (`Maria Grazia Del Bianco`) will split
 /// wrong and the review step should flag it.
 ({String nome, String cognome, bool certain, String sourceLine})?
-_tryExtractName(List<_FlatLine> lines, List<_HeadingBoundary> boundaries) {
+_tryExtractName(
+  List<_FlatLine> lines,
+  List<_DetectedSection> recognizedHeadings,
+) {
   if (lines.isEmpty) return null;
-  final firstHeadingLine = boundaries.isEmpty
-      ? lines.length
-      : boundaries.map((b) => b.startLine).reduce((a, b) => a < b ? a : b);
-  if (firstHeadingLine == 0) return null;
+  // "Before any recognized heading" only ever matters for line 0 — the
+  // candidate is always the document's first line — so this is just: is
+  // line 0 itself a recognized heading? An unrecognized-but-title-shaped
+  // heading (item 5) doesn't disqualify it; only a *recognized* one does.
+  if (recognizedHeadings.any((h) => h.startLine == 0)) return null;
 
   final candidate = lines.first.text.trim();
   if (candidate.contains('@') || RegExp(r'\d').hasMatch(candidate)) return null;
@@ -711,8 +715,16 @@ _tryParseEmbeddedYearRange(String line) {
   );
 }
 
+/// Whether a block boundary comes from a whole-line date range
+/// ([standard], `tryParseDateRangeLine`) or from an embedded-year-range
+/// title line ([embedded], `_tryParseEmbeddedYearRange`).
 enum _AnchorType { standard, embedded }
 
+/// One block-boundary line found in a section's body, plus the date range
+/// it carries. [embeddedTitle]/[embeddedTrailing] are only set for
+/// [_AnchorType.embedded] anchors — the title and post-`:` description text
+/// that live on the anchor line itself, e.g. "Lead Dev (2012 – 2020):
+/// Delivered...".
 class _Anchor {
   final int lineIndex;
   final _AnchorType type;
@@ -728,6 +740,8 @@ class _Anchor {
   });
 }
 
+/// Every line in [lines] that anchors a block boundary, in document order —
+/// a whole-line date range or an embedded-year-range title line.
 List<_Anchor> _findAnchors(List<String> lines) {
   final anchors = <_Anchor>[];
   for (var i = 0; i < lines.length; i++) {
@@ -780,6 +794,7 @@ class _ItemBlock {
   });
 }
 
+/// The last [max] elements of [pool], or all of it if shorter.
 List<String> _takeTrailing(List<String> pool, int max) =>
     pool.length <= max ? pool : pool.sublist(pool.length - max);
 
@@ -792,21 +807,16 @@ List<String> _takeTrailing(List<String> pool, int max) =>
 /// lines (more than 2 before the very first anchor) are returned separately
 /// for the caller to route to "Da rivedere", same as before this ticket.
 ///
-/// [connectorRe]/[splitRe]/[markerRe], when given, are tried against each
-/// block's own first content line *before* that line becomes a
-/// preceding-line candidate for the next block — otherwise a "date, then
-/// {ruolo} presso {azienda}" block (europass_it_01-style) or a "date, then
-/// {titolo}, {istituto}" block would have its own role/company (or
-/// titolo/istituto) line stolen by whatever block follows it (see ticket 53
-/// implementation notes).
+/// [patterns] is tried against each block's own first content line *before*
+/// that line becomes a preceding-line candidate for the next block —
+/// otherwise a "date, then {ruolo} presso {azienda}" block
+/// (europass_it_01-style) or a "date, then {titolo}, {istituto}" block would
+/// have its own role/company (or titolo/istituto) line stolen by whatever
+/// block follows it (see ticket 53 implementation notes).
 ({List<_ItemBlock> blocks, List<String> unclaimedLeading}) _groupIntoItemBlocks(
-  List<String> lines, {
-  RegExp? connectorRe,
-  RegExp? splitRe,
-  RegExp? markerRe,
-  RegExp? subjectVocabRe,
-  RegExp? orgVocabRe,
-}) {
+  List<String> lines,
+  _SubjectOrgPatterns patterns,
+) {
   if (lines.isEmpty) return (blocks: [], unclaimedLeading: []);
 
   final anchors = _findAnchors(lines);
@@ -843,14 +853,7 @@ List<String> _takeTrailing(List<String> pool, int max) =>
     // Own-head claim: only for standard anchors (an embedded anchor already
     // carries its own title on the anchor line itself).
     if (anchor.embeddedTitle == null && ownContent.isNotEmpty) {
-      final resolved = _tryExplicitSubjectOrg(
-        ownContent.first,
-        connectorRe: connectorRe,
-        splitRe: splitRe,
-        markerRe: markerRe,
-        subjectVocabRe: subjectVocabRe ?? _neverMatchRe,
-        orgVocabRe: orgVocabRe ?? _neverMatchRe,
-      );
+      final resolved = _tryExplicitSubjectOrg(ownContent.first, patterns);
       if (resolved != null) {
         block.ownHeadSubject = resolved.subject;
         block.ownHeadOrg = resolved.org;
@@ -885,11 +888,45 @@ List<String> _takeTrailing(List<String> pool, int max) =>
   return (blocks: blocks, unclaimedLeading: unclaimedLeading);
 }
 
-/// Matches nothing — a harmless default for optional vocab regexes so
-/// [_groupIntoItemBlocks] can always pass non-null regexes into
-/// [_tryExplicitSubjectOrg] even when a caller doesn't supply vocab (e.g.
-/// Esperienze's connector-only own-head claim).
-final RegExp _neverMatchRe = RegExp(r'(?!)');
+/// The regexes that decide subject (ruolo/titolo) vs. org
+/// (azienda/istituto) for one section kind — bundled together because
+/// [_groupIntoItemBlocks], [_tryExplicitSubjectOrg], and
+/// [_resolveSubjectOrgPairs] all need the same set per call. Esperienze and
+/// Formazione each define one instance (`_esperienzePatterns`/
+/// `_formazionePatterns`) and pass it to all three.
+class _SubjectOrgPatterns {
+  final RegExp? connectorRe;
+  final RegExp? splitRe;
+  final RegExp? markerRe;
+  final RegExp subjectVocabRe;
+  final RegExp orgVocabRe;
+  const _SubjectOrgPatterns({
+    this.connectorRe,
+    this.splitRe,
+    this.markerRe,
+    required this.subjectVocabRe,
+    required this.orgVocabRe,
+  });
+}
+
+/// `{ruolo} presso/at {azienda}` explicit connector, vocab-guided `|` split
+/// (fixture: "Flutter Architect | Nortek Bank").
+final _esperienzePatterns = _SubjectOrgPatterns(
+  connectorRe: _connectorLineRe,
+  splitRe: _pipeSplitLineRe,
+  subjectVocabRe: _roleVocabRe,
+  orgVocabRe: _companyMarkerRe,
+);
+
+/// `{titolo}, {istituto}` comma split, institution-marker embedded mid-line
+/// (fixture: "Secondary School Diploma ... Istituto Tecnico Superiore G.
+/// Fermi").
+final _formazionePatterns = _SubjectOrgPatterns(
+  splitRe: _commaSplitLineRe,
+  markerRe: _institutionVocabRe,
+  subjectVocabRe: _degreeVocabRe,
+  orgVocabRe: _institutionVocabRe,
+);
 
 // -------------------- Per-document ruolo/azienda (titolo/istituto) vote --
 
@@ -902,13 +939,10 @@ enum _Signal { subject, org, none }
 /// Shared between the own-head claim (block's own first content line) and
 /// the preceding-lines scan, so both layouts recognize the same patterns.
 ({String subject, String org})? _tryExplicitSubjectOrg(
-  String line, {
-  RegExp? connectorRe,
-  RegExp? splitRe,
-  RegExp? markerRe,
-  required RegExp subjectVocabRe,
-  required RegExp orgVocabRe,
-}) {
+  String line,
+  _SubjectOrgPatterns patterns,
+) {
+  final connectorRe = patterns.connectorRe;
   if (connectorRe != null) {
     final m = connectorRe.firstMatch(line);
     if (m != null) {
@@ -916,6 +950,7 @@ enum _Signal { subject, org, none }
     }
   }
 
+  final splitRe = patterns.splitRe;
   if (splitRe != null) {
     final m = splitRe.firstMatch(line);
     if (m != null) {
@@ -924,13 +959,13 @@ enum _Signal { subject, org, none }
       if (left.isNotEmpty && right.isNotEmpty) {
         final leftSignal = _classify(
           left,
-          subjectRe: subjectVocabRe,
-          orgRe: orgVocabRe,
+          subjectRe: patterns.subjectVocabRe,
+          orgRe: patterns.orgVocabRe,
         );
         final rightSignal = _classify(
           right,
-          subjectRe: subjectVocabRe,
-          orgRe: orgVocabRe,
+          subjectRe: patterns.subjectVocabRe,
+          orgRe: patterns.orgVocabRe,
         );
         if (leftSignal == _Signal.subject || rightSignal == _Signal.org) {
           return (subject: left, org: right);
@@ -942,6 +977,7 @@ enum _Signal { subject, org, none }
     }
   }
 
+  final markerRe = patterns.markerRe;
   if (markerRe != null) {
     final matches = markerRe.allMatches(line).toList();
     if (matches.isNotEmpty) {
@@ -960,6 +996,9 @@ enum _Signal { subject, org, none }
   return null;
 }
 
+/// Classifies [text] as carrying a subject signal, an org signal, or
+/// neither — [_Signal.none] when both or neither vocab matches, since a
+/// line matching both isn't a usable disambiguator.
 _Signal _classify(
   String text, {
   required RegExp subjectRe,
@@ -1013,11 +1052,11 @@ class _PendingPair {
 /// of a section, applying explicit per-block signals first and a
 /// per-document majority vote for whatever's left ambiguous.
 ///
-/// [connectorRe] is an optional explicit "{subject} keyword {org}" pattern
-/// (Esperienze's `presso`/`at`) whose keyword alone disambiguates order —
-/// always certain, never needs the vote. [splitRe] is a single-line
-/// separator pattern (Esperienze's `|`, Formazione's `,`) whose *sides*'
-/// order needs vocab or the vote to resolve.
+/// `patterns.connectorRe` is an optional explicit "{subject} keyword {org}"
+/// pattern (Esperienze's `presso`/`at`) whose keyword alone disambiguates
+/// order — always certain, never needs the vote. `patterns.splitRe` is a
+/// single-line separator pattern (Esperienze's `|`, Formazione's `,`) whose
+/// *sides*' order needs vocab or the vote to resolve.
 /// [consumedPrecedingCount] is how many of the block's `precedingLines` were
 /// actually used to resolve `org`/`subject` — 0 unless something matched.
 /// Callers use it to trim exactly that many trailing lines off the
@@ -1034,13 +1073,9 @@ typedef _SubjectOrgResult = ({
 });
 
 List<_SubjectOrgResult> _resolveSubjectOrgPairs(
-  List<_ItemBlock> blocks, {
-  RegExp? connectorRe,
-  RegExp? splitRe,
-  required RegExp subjectVocabRe,
-  required RegExp orgVocabRe,
-  RegExp? orgMarkerLineRe,
-}) {
+  List<_ItemBlock> blocks,
+  _SubjectOrgPatterns patterns,
+) {
   final results = List<_SubjectOrgResult>.filled(blocks.length, (
     subject: '',
     org: '',
@@ -1071,14 +1106,7 @@ List<_SubjectOrgResult> _resolveSubjectOrgPairs(
     // tried against every candidate line still available.
     if (org == null) {
       for (final line in candidateLines) {
-        final resolved = _tryExplicitSubjectOrg(
-          line,
-          connectorRe: connectorRe,
-          splitRe: splitRe,
-          markerRe: orgMarkerLineRe,
-          subjectVocabRe: subjectVocabRe,
-          orgVocabRe: orgVocabRe,
-        );
+        final resolved = _tryExplicitSubjectOrg(line, patterns);
         if (resolved != null) {
           subject ??= resolved.subject;
           org = resolved.org;
@@ -1098,13 +1126,13 @@ List<_SubjectOrgResult> _resolveSubjectOrgPairs(
       final near = candidateLines[1];
       final farSignal = _classify(
         far,
-        subjectRe: subjectVocabRe,
-        orgRe: orgVocabRe,
+        subjectRe: patterns.subjectVocabRe,
+        orgRe: patterns.orgVocabRe,
       );
       final nearSignal = _classify(
         near,
-        subjectRe: subjectVocabRe,
-        orgRe: orgVocabRe,
+        subjectRe: patterns.subjectVocabRe,
+        orgRe: patterns.orgVocabRe,
       );
       if (farSignal == _Signal.org && nearSignal != _Signal.org) {
         org = far;
@@ -1240,7 +1268,7 @@ void _applyConsumedPreceding(
   } else {
     final boundaries = _detectAllHeadingBoundaries(flat);
 
-    final name = _tryExtractName(flat, boundaries);
+    final name = _tryExtractName(flat, recognizedHeadings);
     if (name != null) {
       report.add(
         'anagrafica.nome',
@@ -1347,21 +1375,12 @@ EsperienzeSection _buildEsperienze(
   StringBuffer reviewBuffer,
   ImportProposalReportBuilder report,
 ) {
-  final grouped = _groupIntoItemBlocks(
-    bodyLines,
-    connectorRe: _connectorLineRe,
-  );
+  final grouped = _groupIntoItemBlocks(bodyLines, _esperienzePatterns);
   for (final l in grouped.unclaimedLeading) {
     reviewBuffer.writeln(l);
   }
 
-  final pairs = _resolveSubjectOrgPairs(
-    grouped.blocks,
-    connectorRe: _connectorLineRe,
-    splitRe: _pipeSplitLineRe,
-    subjectVocabRe: _roleVocabRe,
-    orgVocabRe: _companyMarkerRe,
-  );
+  final pairs = _resolveSubjectOrgPairs(grouped.blocks, _esperienzePatterns);
   _applyConsumedPreceding(grouped.blocks, pairs);
 
   final items = <EsperienzaItem>[];
@@ -1419,24 +1438,12 @@ FormazioneSection _buildFormazione(
   StringBuffer reviewBuffer,
   ImportProposalReportBuilder report,
 ) {
-  final grouped = _groupIntoItemBlocks(
-    bodyLines,
-    splitRe: _commaSplitLineRe,
-    markerRe: _institutionVocabRe,
-    subjectVocabRe: _degreeVocabRe,
-    orgVocabRe: _institutionVocabRe,
-  );
+  final grouped = _groupIntoItemBlocks(bodyLines, _formazionePatterns);
   for (final l in grouped.unclaimedLeading) {
     reviewBuffer.writeln(l);
   }
 
-  final pairs = _resolveSubjectOrgPairs(
-    grouped.blocks,
-    splitRe: _commaSplitLineRe,
-    subjectVocabRe: _degreeVocabRe,
-    orgVocabRe: _institutionVocabRe,
-    orgMarkerLineRe: _institutionVocabRe,
-  );
+  final pairs = _resolveSubjectOrgPairs(grouped.blocks, _formazionePatterns);
   _applyConsumedPreceding(grouped.blocks, pairs);
 
   final items = <FormazioneItem>[];
