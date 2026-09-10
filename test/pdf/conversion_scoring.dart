@@ -29,11 +29,12 @@ String normalizeFieldValue(String value) =>
 
 /// Flattens the fields [buildFromPages] can populate into `path -> value`,
 /// skipping anything null/empty (an absent field is "not proposed", not
-/// "proposed as empty"). Only the sections/fields the importer's heuristics
-/// ever fill are covered — `nome`/`cognome`/`headline`, `ruolo`/`azienda`,
-/// `titolo`/`istituto` are deliberately never auto-filled (ticket 13), so
-/// they never appear here; a golden that expects them will correctly score
-/// them as missed.
+/// "proposed as empty"). Covers Contatti/Esperienze/Formazione/
+/// Certificazioni, including `ruolo`/`azienda`/`titolo`/`istituto` (ticket
+/// 53 auto-fills these; ticket 13 never did). Anagrafica/Skill/Lingue are
+/// intentionally left out of scoring for now — their heuristics (ticket 53
+/// items 2-4) are covered by dedicated unit tests instead, so an ungraded
+/// proposal there can't drag down this corpus's precision.
 Map<String, String> flattenDocument(CvDocument doc) {
   final fields = <String, String>{};
 

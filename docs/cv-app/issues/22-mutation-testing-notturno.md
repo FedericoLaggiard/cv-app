@@ -112,3 +112,34 @@ emulatore.
 ## Report
 
 [assets/22-mutation-testing-ci-report.md](assets/22-mutation-testing-ci-report.md)
+
+## Amendment (post-53) — il perimetro cresce di un file, il criterio resta lo stesso
+
+"**Solo `lib/src/domain/`**" era una conseguenza del criterio, non il criterio.
+Il criterio è **logica pura, ben isolata**, e l'esclusione motivata riguarda i
+widget ("mutanti equivalenti a valanga"). Con la [Slice P](../../import-rework/P-aggressive.md)
+(ticket 53) `lib/src/pdf/pdf_import_heuristics.dart` diventa il secondo modulo
+del repo che soddisfa quel criterio: nessuna dipendenza da Flutter né da
+`pdfrx` (è una scelta di design dichiarata nel doc del modulo), ed è ora denso
+di confini e comparazioni — il tie-break del voto per-documento, `keep <= 0`,
+`_takeTrailing`, `consumedPrecedingCount` — dove un `>` che diventa `>=`
+passerebbe inosservato.
+
+**Config separata, non un `<file>` in più.** `tool/mutation_test_pdf.xml`
+affianca `tool/mutation_test.xml` invece di estenderlo: i due perimetri hanno
+suite di test diverse, e un solo documento costringerebbe ogni mutante del
+dominio a pagare anche la suite pdf (e viceversa), raddoppiando i tempi senza
+aggiungere segnale. Il workflow li esegue come voci di una matrice, in
+parallelo, ognuna con impronta di cache e soglia proprie.
+
+**Soglia separata, e nasce a 0.** Il dominio sta a `MUTATION_THRESHOLD=75`; il
+nuovo perimetro legge `MUTATION_THRESHOLD_PDF`, che finché non esiste vale 0 —
+cioè run di baseline che non fallisce. Motivo: un modulo costruito su fallback
+("se il voto non raggiunge una maggioranza chiara, entrambi vuoti") produce
+mutanti equivalenti che nessun test può uccidere, quindi il primo numero va
+misurato prima di trasformarlo in un gate.
+
+Resta valido tutto il resto: comando di test ristretto ai test che esercitano
+davvero il perimetro (qui i quattro file di `test/pdf/` che importano il
+modulo, non i test dei template PDF), gate notturno non bloccante, `lcov` per
+saltare le righe non coperte.

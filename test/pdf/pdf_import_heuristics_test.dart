@@ -2,6 +2,7 @@
 library;
 
 import 'package:cv_app/src/domain/cv_section.dart';
+import 'package:cv_app/src/domain/enums.dart';
 import 'package:cv_app/src/domain/year_month.dart';
 import 'package:cv_app/src/pdf/pdf_import_heuristics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,6 +57,75 @@ void main() {
     for (final entry in cases.entries) {
       test('"${entry.key}" -> ${entry.value}', () {
         expect(tryParseFreeTextYearMonth(entry.key), entry.value);
+      });
+    }
+  });
+
+  // Il dizionario dei mesi e' una tabella compilata a mano che cresce a ogni
+  // lingua o abbreviazione aggiunta, e una voce sbagliata non fa crashare
+  // nulla: produce una data plausibile ma sbagliata, per giunta marcata
+  // `certain: true` nel report, quindi il passo di revisione non la
+  // evidenzierebbe. Il baseline di mutation testing (ticket 22/53) ha trovato
+  // 27 voci su 44 che nessun test toccava: le attese qui sotto sono scritte a
+  // mano di proposito, per non ridursi a rileggere la stessa tabella.
+  group('tryParseFreeTextYearMonth — ogni voce del dizionario dei mesi', () {
+    const monthWords = <String, int>{
+      'gennaio': 1,
+      'gen': 1,
+      'january': 1,
+      'jan': 1,
+      'febbraio': 2,
+      'feb': 2,
+      'february': 2,
+      'marzo': 3,
+      'mar': 3,
+      'march': 3,
+      'aprile': 4,
+      'apr': 4,
+      'april': 4,
+      'maggio': 5,
+      'mag': 5,
+      'may': 5,
+      'giugno': 6,
+      'giu': 6,
+      'june': 6,
+      'jun': 6,
+      'luglio': 7,
+      'lug': 7,
+      'july': 7,
+      'jul': 7,
+      'agosto': 8,
+      'ago': 8,
+      'august': 8,
+      'aug': 8,
+      'settembre': 9,
+      'set': 9,
+      'sep': 9,
+      'september': 9,
+      'sept': 9,
+      'ottobre': 10,
+      'ott': 10,
+      'october': 10,
+      'oct': 10,
+      'novembre': 11,
+      'nov': 11,
+      'november': 11,
+      'dicembre': 12,
+      'dic': 12,
+      'december': 12,
+      'dec': 12,
+    };
+
+    test('il dizionario copre 44 voci: se ne aggiungi una, aggiungila qui', () {
+      expect(monthWords, hasLength(44));
+    });
+
+    for (final entry in monthWords.entries) {
+      test('"${entry.key} 2020" -> mese ${entry.value}', () {
+        expect(
+          tryParseFreeTextYearMonth('${entry.key} 2020'),
+          YearMonth(2020, entry.value),
+        );
       });
     }
   });
@@ -224,35 +294,33 @@ void main() {
       );
     });
 
-    test('non riempie mai ruolo/azienda/titolo/istituto', () {
-      final (doc, _) = buildFromPages([
-        page(
-          [
-            'Esperienze',
-            'Senior Backend Engineer presso Acme Corp',
-            'Gennaio 2020 - Marzo 2021',
-            'Formazione',
-            'Laurea in Informatica presso Università di Bologna',
-            'Gennaio 2015 - Luglio 2018',
-          ],
-          headingLines: {0, 3},
-        ),
-      ]);
+    test(
+      'propone ruolo/azienda da un connettore esplicito "presso" (ticket 53)',
+      () {
+        final (doc, report) = buildFromPages([
+          page(
+            [
+              'Esperienze',
+              'Senior Backend Engineer presso Acme Corp',
+              'Gennaio 2020 - Marzo 2021',
+              'Certificazioni',
+              'AWS Certified',
+            ],
+            headingLines: {0, 3},
+          ),
+        ]);
 
-      final esperienze = doc.sections
-          .whereType<EsperienzeSection>()
-          .single
-          .items;
-      expect(esperienze.single.ruolo, '');
-      expect(esperienze.single.azienda, '');
-
-      final formazione = doc.sections
-          .whereType<FormazioneSection>()
-          .single
-          .items;
-      expect(formazione.single.titolo, '');
-      expect(formazione.single.istituto, null);
-    });
+        final esperienze = doc.sections
+            .whereType<EsperienzeSection>()
+            .single
+            .items;
+        expect(esperienze.single.ruolo, 'Senior Backend Engineer');
+        expect(esperienze.single.azienda, 'Acme Corp');
+        // Keyword-disambiguated explicit match — certain, not vote-derived.
+        expect(report.isUncertain('esperienze[0].ruolo'), false);
+        expect(report.isUncertain('esperienze[0].azienda'), false);
+      },
+    );
   });
 
   group('buildFromPages — fallback anti-disastro', () {
@@ -483,52 +551,50 @@ void main() {
     });
   });
 
-  group(
-    'buildFromPages — sezioni riconosciute ma non strutturabili (ticket 51)',
-    () {
-      test('Sommario diventa una sezione custom col titolo originale', () {
-        final (doc, _) = buildFromPages([
-          page(
-            [
-              'ABOUT ME',
-              'Testo di presentazione libero.',
-              'Esperienze',
-              'Gennaio 2020 - Marzo 2021',
-              'Testo.',
-            ],
-            headingLines: {0, 2},
-          ),
-        ]);
+  group('buildFromPages — sezioni riconosciute ma non strutturabili (ticket 51)', () {
+    test('Sommario diventa una sezione custom col titolo originale', () {
+      final (doc, _) = buildFromPages([
+        page(
+          [
+            'ABOUT ME',
+            'Testo di presentazione libero.',
+            'Esperienze',
+            'Gennaio 2020 - Marzo 2021',
+            'Testo.',
+          ],
+          headingLines: {0, 2},
+        ),
+      ]);
 
-        final custom = doc.sections.whereType<CustomSection>().where(
-          (s) => s.displayTitle == 'ABOUT ME',
-        );
-        expect(custom, hasLength(1));
-        expect(custom.single.markdown, contains('Testo di presentazione'));
-      });
+      final custom = doc.sections.whereType<CustomSection>().where(
+        (s) => s.displayTitle == 'ABOUT ME',
+      );
+      expect(custom, hasLength(1));
+      expect(custom.single.markdown, contains('Testo di presentazione'));
+    });
 
-      test('Skill diventa una sezione custom col titolo originale', () {
-        final (doc, _) = buildFromPages([
-          page(
-            [
-              'Esperienze',
-              'Gennaio 2020 - Marzo 2021',
-              'Testo.',
-              'SKILLS',
-              'Dart, Flutter, SQL',
-            ],
-            headingLines: {0, 3},
-          ),
-        ]);
+    test('Skill con una riga a separatori ripetuti diventa tags strutturati (ticket 53)', () {
+      final (doc, _) = buildFromPages([
+        page(
+          [
+            'Esperienze',
+            'Gennaio 2020 - Marzo 2021',
+            'Testo.',
+            'SKILLS',
+            'Dart, Flutter, SQL',
+          ],
+          headingLines: {0, 3},
+        ),
+      ]);
 
-        final custom = doc.sections.whereType<CustomSection>().where(
-          (s) => s.displayTitle == 'SKILLS',
-        );
-        expect(custom, hasLength(1));
-        expect(custom.single.markdown, contains('Dart, Flutter, SQL'));
-      });
+      final skill = doc.sections.whereType<SkillSection>().single;
+      expect(skill.displayTitle, 'SKILLS');
+      expect(skill.data.tags, ['Dart', 'Flutter', 'SQL']);
+    });
 
-      test('Lingue diventa una sezione custom col titolo originale', () {
+    test(
+      'Lingue con CEFR/madrelingua diventa LinguaItem strutturati (ticket 53)',
+      () {
         final (doc, _) = buildFromPages([
           page(
             [
@@ -542,12 +608,236 @@ void main() {
           ),
         ]);
 
-        final custom = doc.sections.whereType<CustomSection>().where(
-          (s) => s.displayTitle == 'Lingue',
-        );
-        expect(custom, hasLength(1));
-        expect(custom.single.markdown, contains('Italiano - Madrelingua'));
-      });
+        final lingue = doc.sections.whereType<LingueSection>().single;
+        expect(lingue.displayTitle, 'Lingue');
+        expect(lingue.items.single.lingua, 'Italiano');
+        expect(lingue.items.single.livello, LivelloCefr.madrelingua);
+      },
+    );
+  });
+
+  group('buildFromPages — voto per-documento ruolo/azienda (ticket 53)', () {
+    // Every block below hands the *next* block its precedingLines by
+    // ending with a 2-line azienda/ruolo pair right before the next date
+    // line — mirroring how [_groupIntoItemBlocks] peeks at a block's own
+    // trailing content.
+    test(
+      'ordine azienda-prima: i blocchi ambigui ereditano "far = azienda"',
+      () {
+        final (doc, report) = buildFromPages([
+          page(
+            [
+              'Esperienze', // 0
+              'Gennaio 2018 - Marzo 2019', // 1 (block0 date)
+              'Testo descrittivo primo.', // 2
+              'Beta Inc', // 3  (far: company marker -> block1's azienda)
+              'Solutions Architect', // 4  (near: role vocab -> block1's ruolo)
+              'Aprile 2019 - Maggio 2020', // 5 (block1 date)
+              'Testo descrittivo secondo.', // 6
+              'Gamma Ltd', // 7  (far -> block2's azienda)
+              'Platform Manager', // 8  (near -> block2's ruolo)
+              'Giugno 2020 - Luglio 2021', // 9 (block2 date)
+              'Testo descrittivo terzo.', // 10
+              'Nord Ovest', // 11 (far, no vocab -> ambiguous)
+              'Coordinamento interno', // 12 (near, no vocab -> ambiguous)
+              'Agosto 2021 - Settembre 2022', // 13 (block3 date)
+              'Testo descrittivo quarto.', // 14
+              'Formazione', // 15
+              'Gennaio 2015 - Luglio 2018', // 16
+              'Laurea.', // 17
+            ],
+            headingLines: {0, 15},
+          ),
+        ]);
+
+        final items = doc.sections.whereType<EsperienzeSection>().single.items;
+        expect(items[1].azienda, 'Beta Inc');
+        expect(items[1].ruolo, 'Solutions Architect');
+        expect(items[2].azienda, 'Gamma Ltd');
+        expect(items[2].ruolo, 'Platform Manager');
+        // No direct signal on block3's pair: the document-wide majority
+        // (far = azienda, established by blocks 1 and 2) fills it in, marked
+        // uncertain — a statistical pick, not a direct match.
+        expect(items[3].azienda, 'Nord Ovest');
+        expect(items[3].ruolo, 'Coordinamento interno');
+        expect(report.isUncertain('esperienze[3].azienda'), true);
+        expect(report.isUncertain('esperienze[3].ruolo'), true);
+        expect(report.isUncertain('esperienze[1].azienda'), false);
+      },
+    );
+
+    test(
+      'ordine ruolo-prima: i blocchi ambigui ereditano "near = azienda"',
+      () {
+        final (doc, report) = buildFromPages([
+          page(
+            [
+              'Esperienze', // 0
+              'Gennaio 2018 - Marzo 2019', // 1
+              'Testo descrittivo primo.', // 2
+              'Solutions Architect', // 3 (far: role vocab -> ruolo)
+              'Beta Inc', // 4 (near: company marker -> azienda)
+              'Aprile 2019 - Maggio 2020', // 5
+              'Testo descrittivo secondo.', // 6
+              'Platform Manager', // 7 (far -> ruolo)
+              'Gamma Ltd', // 8 (near -> azienda)
+              'Giugno 2020 - Luglio 2021', // 9
+              'Testo descrittivo terzo.', // 10
+              'Coordinamento interno', // 11 (far, ambiguous)
+              'Nord Ovest', // 12 (near, ambiguous)
+              'Agosto 2021 - Settembre 2022', // 13
+              'Testo descrittivo quarto.', // 14
+              'Formazione', // 15
+              'Gennaio 2015 - Luglio 2018', // 16
+              'Laurea.', // 17
+            ],
+            headingLines: {0, 15},
+          ),
+        ]);
+
+        final items = doc.sections.whereType<EsperienzeSection>().single.items;
+        expect(items[3].azienda, 'Nord Ovest');
+        expect(items[3].ruolo, 'Coordinamento interno');
+        expect(report.isUncertain('esperienze[3].azienda'), true);
+      },
+    );
+
+    test(
+      'documento misto senza maggioranza chiara -> ricade su entrambi vuoti',
+      () {
+        final (doc, _) = buildFromPages([
+          page(
+            [
+              'Esperienze', // 0
+              'Gennaio 2018 - Marzo 2019', // 1
+              'Testo descrittivo primo.', // 2
+              'Beta Inc', // 3 (far=azienda)
+              'Solutions Architect', // 4 (near=ruolo)
+              'Aprile 2019 - Maggio 2020', // 5
+              'Testo descrittivo secondo.', // 6
+              'Platform Manager', // 7 (far=ruolo)
+              'Gamma Ltd', // 8 (near=azienda) — opposite order, ties the vote
+              'Giugno 2020 - Luglio 2021', // 9
+              'Testo descrittivo terzo.', // 10
+              'Nord Ovest', // 11 (ambiguous)
+              'Coordinamento interno', // 12 (ambiguous)
+              'Agosto 2021 - Settembre 2022', // 13
+              'Testo descrittivo quarto.', // 14
+              'Formazione', // 15
+              'Gennaio 2015 - Luglio 2018', // 16
+              'Laurea.', // 17
+            ],
+            headingLines: {0, 15},
+          ),
+        ]);
+
+        final items = doc.sections.whereType<EsperienzeSection>().single.items;
+        expect(items[3].azienda, '');
+        expect(items[3].ruolo, '');
+      },
+    );
+
+    test('documento con un solo blocco ambiguo -> nessun voto, resta vuoto', () {
+      final (doc, _) = buildFromPages([
+        page(
+          [
+            'Nord Ovest', // 0 (leading, ambiguous, no other block to vote from)
+            'Coordinamento interno', // 1
+            'Esperienze', // 2
+            'Gennaio 2018 - Marzo 2019', // 3
+            'Testo.', // 4
+            'Formazione', // 5
+            'Gennaio 2015 - Luglio 2018', // 6
+            'Laurea.', // 7
+          ],
+          headingLines: {2, 5},
+        ),
+      ]);
+
+      final items = doc.sections.whereType<EsperienzeSection>().single.items;
+      expect(items.single.azienda, '');
+      expect(items.single.ruolo, '');
+    });
+  });
+
+  group('buildFromPages — nome/cognome (ticket 53)', () {
+    test('prima riga del documento, prima di ogni heading', () {
+      final (doc, report) = buildFromPages([
+        page(
+          [
+            'Anna Bianchi', // 0
+            'Esperienze', // 1
+            'Gennaio 2020 - Marzo 2021', // 2
+            'Testo.', // 3
+            'Formazione', // 4
+            'Gennaio 2015 - Luglio 2018', // 5
+            'Laurea.', // 6
+          ],
+          headingLines: {1, 4},
+        ),
+      ]);
+
+      final anagrafica = doc.sections.whereType<AnagraficaSection>().single;
+      expect(anagrafica.data.nome, 'Anna');
+      expect(anagrafica.data.cognome, 'Bianchi');
+      expect(report.isUncertain('anagrafica.nome'), false);
+    });
+
+    test('nome composto (>2 token) è marcato incerto', () {
+      final (doc, report) = buildFromPages([
+        page(
+          [
+            'Maria Grazia Del Bianco', // 0
+            'Esperienze', // 1
+            'Gennaio 2020 - Marzo 2021', // 2
+            'Testo.', // 3
+            'Formazione', // 4
+            'Gennaio 2015 - Luglio 2018', // 5
+            'Laurea.', // 6
+          ],
+          headingLines: {1, 4},
+        ),
+      ]);
+
+      final anagrafica = doc.sections.whereType<AnagraficaSection>().single;
+      expect(anagrafica.data.nome, 'Maria');
+      expect(anagrafica.data.cognome, 'Grazia Del Bianco');
+      expect(report.isUncertain('anagrafica.cognome'), true);
+    });
+  });
+
+  group(
+    'buildFromPages — sezione custom da heading non riconosciuto (ticket 53)',
+    () {
+      test(
+        'un titolo ALL-CAPS non nel dizionario diventa sezione custom propria',
+        () {
+          final (doc, _) = buildFromPages([
+            page(
+              [
+                'Esperienze', // 0
+                'Gennaio 2020 - Marzo 2021', // 1
+                'Testo.', // 2
+                'PROGETTI', // 3
+                'App di gestione spese personale.', // 4
+                'Formazione', // 5
+                'Gennaio 2015 - Luglio 2018', // 6
+                'Laurea.', // 7
+              ],
+              headingLines: {0, 3, 5},
+            ),
+          ]);
+
+          final progetti = doc.sections.whereType<CustomSection>().where(
+            (s) => s.displayTitle == 'PROGETTI',
+          );
+          expect(progetti, hasLength(1));
+          expect(
+            progetti.single.markdown,
+            contains('App di gestione spese personale.'),
+          );
+        },
+      );
     },
   );
 }
